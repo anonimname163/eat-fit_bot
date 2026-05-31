@@ -460,8 +460,9 @@ async function confirmOrder(bot, query, client) {
       { reply_markup: { remove_keyboard: false } }
     );
 
-    // Уведомить поваров
+    // Уведомить поваров и админ-группу
     await notify.notifyCookGroup(bot, order);
+    await notify.notifyAdminGroup(bot, order);
   } catch (err) {
     if (err.message === 'INSUFFICIENT_BALANCE') {
       await bot.sendMessage(chatId, t(lang, 'balance_insufficient'));

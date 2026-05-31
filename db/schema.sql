@@ -42,9 +42,13 @@ CREATE TABLE IF NOT EXISTS orders (
   comment           TEXT,
   cook_id           BIGINT,                     -- telegram_id повара, взявшего заказ
   courier_id        BIGINT,                     -- telegram_id курьера, взявшего заказ
+  admin_msg_id      BIGINT,                     -- message_id карточки заказа в админ-группе
   created_at        TIMESTAMP      DEFAULT NOW(),
   updated_at        TIMESTAMP      DEFAULT NOW()
 );
+
+-- Для уже существующих БД добавляем недостающую колонку
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_msg_id BIGINT;
 
 -- Позиции заказа
 CREATE TABLE IF NOT EXISTS order_items (

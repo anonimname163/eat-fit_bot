@@ -62,6 +62,7 @@ async function takeDelivery(bot, query, actor) {
 
   // Теперь курьер реально выехал — уведомляем клиента «Курьер выехал! 🚗»
   await notify.notifyClientStatus(bot, rows[0], 'delivering');
+  await notify.updateAdminGroup(bot, rows[0]);
 
   try {
     await bot.editMessageReplyMarkup(
@@ -88,6 +89,7 @@ async function markDelivered(bot, query, actor) {
   console.log(`[ORDER] Заказ #${orderId} доставлен курьером ${query.from.id}`);
 
   await notify.notifyClientStatus(bot, rows[0], 'done');
+  await notify.updateAdminGroup(bot, rows[0]);
 
   try {
     await bot.editMessageReplyMarkup(

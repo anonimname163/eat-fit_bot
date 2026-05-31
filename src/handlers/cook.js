@@ -70,6 +70,7 @@ async function takeToWork(bot, query, actor) {
   console.log(`[ORDER] Заказ #${orderId} взят в работу поваром ${query.from.id}`);
 
   await notify.notifyClientStatus(bot, order, 'cooking');
+  await notify.updateAdminGroup(bot, order);
 
   // Обновить сообщение (убрать кнопку «принять», дать «готово»)
   try {
@@ -95,6 +96,7 @@ async function markReady(bot, query, actor) {
 
   // Клиента уведомляем «Курьер выехал» только когда курьер реально возьмёт заказ
   await notify.notifyCourierGroup(bot, order);
+  await notify.updateAdminGroup(bot, order);
 
   try {
     await bot.editMessageReplyMarkup(

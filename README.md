@@ -73,6 +73,7 @@ npm start
 | `ADMIN_TELEGRAM_IDS`  | Telegram ID администраторов через запятую. **Только они** видят и открывают админку |
 | `COOK_GROUP_ID`       | ID группы поваров (новые заказы). Формат `-100xxxxxxxxx`                   |
 | `COURIER_GROUP_ID`    | ID группы курьеров (готовые заказы)                                       |
+| `ADMIN_GROUP_ID`      | ID группы админов: все заказы и обновление статуса в реальном времени     |
 | `BOT_USERNAME`        | Username бота **без `@`** — для генерации deep link                       |
 | `DATABASE_SSL`        | (опц.) `true`/`false` — принудительно вкл/выкл SSL к БД                   |
 
