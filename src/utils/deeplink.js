@@ -21,15 +21,12 @@ function buildChannelPost(item, lang = 'ru') {
   const desc = dishDesc(lang, item);
   const price = formatMoney(item.price);
   const currency = t(lang, 'currency');
-  const orderBtn = t(lang, 'post_order_btn');
-  const link = dishDeepLink(item.id);
 
+  // Ссылку выносим в inline-кнопку, в тексте её больше нет
   const lines = [];
   lines.push(`🍕 ${name}`);
   if (desc) lines.push(`📝 ${desc}`);
   lines.push(`💵 ${price} ${currency}`);
-  lines.push('');
-  lines.push(`${orderBtn}: ${link}`);
   return lines.join('\n');
 }
 

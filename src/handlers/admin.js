@@ -182,9 +182,9 @@ async function handleAddDishStep(bot, msg) {
           await bot.sendMessage(chatId, t(lang, 'photo_save_failed'));
         }
       }
-      // Сразу выдать deep link и пост для канала
-      await bot.sendMessage(chatId, `🔗 ${dishDeepLink(item.id)}`);
-      await bot.sendMessage(chatId, buildChannelPost(item, lang));
+      // Сразу выдать готовый пост для канала (фото + текст + кнопка)
+      await bot.sendMessage(chatId, t(lang, 'post_for_channel'));
+      await sendChannelPost(bot, chatId, item, lang);
       return true;
     }
 
@@ -588,15 +588,40 @@ async function showGenPostMenu(bot, chatId, lang) {
   });
 }
 
+/**
+ * Отправить готовый пост для канала: фото + текст + inline-кнопка «Заказать»
+ * со ссылкой-deeplink. Кнопка сохраняется при пересылке поста в канал.
+ */
+async function sendChannelPost(bot, chatId, item, lang) {
+  const text = buildChannelPost(item, lang);
+  const keyboard = {
+    inline_keyboard: [[{ text: t(lang, 'post_order_btn'), url: dishDeepLink(item.id) }]],
+  };
+  if (item.photo_url) {
+    try {
+      await bot.sendPhoto(chatId, item.photo_url, { caption: text, reply_markup: keyboard });
+      return;
+    } catch (err) {
+      const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+      console.error('[ERROR] sendChannelPost photo (item', item.id, '):', body);
+      // битое фото — обнулим, чтобы не мешало дальше
+      await db.query('UPDATE menu_items SET photo_url = NULL WHERE id = $1', [item.id]);
+    }
+  }
+  await bot.sendMessage(chatId, text, { reply_markup: keyboard });
+}
+
 async function generatePost(bot, query, lang) {
   const target = query.data.split(':')[2]; // <id> | 'all'
   await bot.answerCallbackQuery(query.id);
   const chatId = query.message.chat.id;
 
+  await bot.sendMessage(chatId, t(lang, 'post_for_channel'));
+
   if (target === 'all') {
     const { rows } = await db.query('SELECT * FROM menu_items WHERE is_active = TRUE ORDER BY id');
     for (const item of rows) {
-      await bot.sendMessage(chatId, buildChannelPost(item, lang));
+      await sendChannelPost(bot, chatId, item, lang);
     }
     return;
   }
@@ -606,7 +631,7 @@ async function generatePost(bot, query, lang) {
     await bot.sendMessage(chatId, t(lang, 'dish_not_found'));
     return;
   }
-  await bot.sendMessage(chatId, buildChannelPost(rows[0], lang));
+  await sendChannelPost(bot, chatId, rows[0], lang);
 }
 
 module.exports = {

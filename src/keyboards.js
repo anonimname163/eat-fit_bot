@@ -2,7 +2,7 @@
 const { t } = require('./i18n');
 
 /** Reply-клавиатура главного меню с учётом роли. */
-function mainMenuKeyboard(lang, role) {
+function mainMenuKeyboard(lang, role, isAdmin) {
   const rows = [
     [t(lang, 'btn_make_order')],
     [t(lang, 'btn_my_orders'), t(lang, 'btn_profile')],
@@ -10,7 +10,8 @@ function mainMenuKeyboard(lang, role) {
   ];
   if (role === 'cook') rows.push([t(lang, 'btn_cook_mode')]);
   if (role === 'courier') rows.push([t(lang, 'btn_courier_mode')]);
-  if (role === 'admin') rows.push([t(lang, 'btn_admin_panel')]);
+  // Кнопка админки — только реальным админам из ADMIN_TELEGRAM_IDS
+  if (isAdmin) rows.push([t(lang, 'btn_admin_panel')]);
 
   return {
     reply_markup: {

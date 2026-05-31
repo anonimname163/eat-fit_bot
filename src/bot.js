@@ -6,7 +6,7 @@ const db = require('./db');
 const { t } = require('./i18n');
 const state = require('./state');
 const { getClient, isRegistered } = require('./middleware/registration');
-const { effectiveRole, hasRole } = require('./middleware/auth');
+const { effectiveRole, hasRole, isEnvAdmin } = require('./middleware/auth');
 
 const start = require('./handlers/start');
 const menu = require('./handlers/menu');
@@ -77,6 +77,7 @@ bot.on('message', async (msg) => {
     if (await admin.handleEditDishStep(bot, msg)) return;
     if (await admin.handleUserSearchStep(bot, msg)) return;
     if (await admin.handleDepositStep(bot, msg)) return;
+    if (await profile.handleProfileEditStep(bot, msg)) return;
 
     // 2) Команды
     if (msg.text === '/menu') {
@@ -96,7 +97,7 @@ bot.on('message', async (msg) => {
     }
     if (msg.text === '/admin') {
       const client = await getClient(telegramId);
-      if (hasRole(client, telegramId, ['admin'])) {
+      if (isEnvAdmin(telegramId)) {
         await admin.showAdminPanel(bot, chatId, client);
       } else {
         const lang = (client && client.language) || 'ru';
@@ -126,7 +127,7 @@ bot.on('message', async (msg) => {
       if (hasRole(client, telegramId, ['courier', 'admin'])) await courier.showCourierPanel(bot, chatId, client);
       else await bot.sendMessage(chatId, t(lang, 'access_denied'));
     } else if (text === t('ru', 'btn_admin_panel') || text === t('uz', 'btn_admin_panel')) {
-      if (hasRole(client, telegramId, ['admin'])) await admin.showAdminPanel(bot, chatId, client);
+      if (isEnvAdmin(telegramId)) await admin.showAdminPanel(bot, chatId, client);
       else await bot.sendMessage(chatId, t(lang, 'access_denied'));
     }
     // прочий текст вне диалога — игнорируем
@@ -200,6 +201,19 @@ bot.on('callback_query', async (query) => {
       return;
     }
 
+    // --- Профиль (редактирование) ---
+    if (domain === 'profile') {
+      const client = await getClient(telegramId);
+      if (!isRegistered(client)) {
+        await bot.answerCallbackQuery(query.id, { text: t(lang, 'not_registered') });
+        return;
+      }
+      const sub = data.split(':')[1];
+      if (sub === 'edit') await profile.showEditProfile(bot, query, client);
+      else if (sub === 'field') await profile.startProfileField(bot, query, client);
+      return;
+    }
+
     // --- Повар ---
     if (domain === 'cook') {
       if (!hasRole(actor, telegramId, ['cook', 'admin'])) {
@@ -226,7 +240,7 @@ bot.on('callback_query', async (query) => {
 
     // --- Админ ---
     if (domain === 'admin') {
-      if (!hasRole(actor, telegramId, ['admin'])) {
+      if (!isEnvAdmin(telegramId)) {
         await bot.answerCallbackQuery(query.id, { text: t(lang, 'access_denied') });
         return;
       }

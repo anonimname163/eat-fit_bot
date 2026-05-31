@@ -123,6 +123,33 @@ async function startOrder(bot, chatId, client) {
 }
 
 /**
+ * Переход по deep link: сразу кладём выбранное блюдо в количестве 1
+ * и открываем меню с панелью корзины.
+ */
+async function openDishFromDeepLink(bot, chatId, client, itemId) {
+  const lang = client.language || 'ru';
+  const item = await menu.getActiveItem(itemId);
+
+  if (item) {
+    // Кладём блюдо в количестве 1 (если его ещё нет в корзине)
+    if (state.getQuantity(client.telegram_id, item.id) === 0) {
+      state.incQuantity(client.telegram_id, item);
+    }
+    await bot.sendMessage(
+      chatId,
+      `✅ ${esc(t(lang, 'added_to_cart'))}: <b>${esc(dishName(lang, item))}</b>`,
+      { parse_mode: 'HTML' }
+    );
+  } else {
+    await bot.sendMessage(chatId, t(lang, 'dish_not_found'));
+  }
+
+  // Открываем меню и живую панель корзины (выбранное блюдо уже «1 шт»)
+  await menu.showMenu(bot, chatId, client);
+  await sendCartPanel(bot, chatId, client);
+}
+
+/**
  * Добавить блюдо в корзину (callback cart:add:<id>) — обновляем панель на месте.
  */
 async function addToCart(bot, query, client) {
@@ -456,6 +483,7 @@ async function showMyOrders(bot, chatId, client) {
 
 module.exports = {
   openDishCard,
+  openDishFromDeepLink,
   startOrder,
   addToCart,
   handleQty,

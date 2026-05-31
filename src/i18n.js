@@ -93,6 +93,21 @@ const dict = {
   },
   currency: { ru: 'сум', uz: 'so‘m' },
 
+  // ---- Редактирование профиля ----
+  btn_edit_profile: { ru: '✏️ Редактировать профиль', uz: '✏️ Profilni tahrirlash' },
+  profile_choose_field: { ru: 'Что изменить?', uz: 'Nimani o‘zgartiramiz?' },
+  pf_name: { ru: '👤 Имя и фамилия', uz: '👤 Ism va familiya' },
+  pf_phone: { ru: '📞 Телефон', uz: '📞 Telefon' },
+  pf_address: { ru: '📍 Адрес', uz: '📍 Manzil' },
+  pf_language: { ru: '🌐 Язык', uz: '🌐 Til' },
+  profile_ask_name: { ru: 'Введите имя и фамилию:', uz: 'Ism va familiyani kiriting:' },
+  profile_ask_phone: {
+    ru: 'Отправьте номер телефона кнопкой ниже или введите вручную:',
+    uz: 'Telefon raqamini pastdagi tugma orqali yuboring yoki qo‘lda kiriting:',
+  },
+  profile_ask_address: { ru: 'Введите новый адрес доставки:', uz: 'Yangi yetkazib berish manzilini kiriting:' },
+  profile_saved: { ru: 'Профиль обновлён ✅', uz: 'Profil yangilandi ✅' },
+
   // ---- Меню / категории ----
   menu_title: {
     ru: '🍽 Меню',
@@ -322,6 +337,10 @@ const dict = {
   },
   gen_post_all: { ru: '📢 Все активные блюда', uz: '📢 Barcha faol taomlar' },
   post_order_btn: { ru: '👉 Заказать', uz: '👉 Buyurtma berish' },
+  post_for_channel: {
+    ru: '📢 Готовый пост — перешлите его в канал (кнопка сохранится):',
+    uz: '📢 Tayyor post — uni kanalga yo‘naltiring (tugma saqlanadi):',
+  },
 
   // ---- Ошибки / доступ ----
   error_generic: {

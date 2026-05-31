@@ -4,7 +4,7 @@ const { t } = require('../i18n');
 const state = require('../state');
 const kb = require('../keyboards');
 const { getClient, isRegistered } = require('../middleware/registration');
-const { effectiveRole, syncAdminRole } = require('../middleware/auth');
+const { effectiveRole, syncAdminRole, isEnvAdmin } = require('../middleware/auth');
 
 /**
  * Показать главное меню зарегистрированному клиенту.
@@ -12,7 +12,8 @@ const { effectiveRole, syncAdminRole } = require('../middleware/auth');
 async function showMainMenu(bot, chatId, client) {
   const lang = client.language || 'ru';
   const role = effectiveRole(client, client.telegram_id);
-  await bot.sendMessage(chatId, t(lang, 'main_menu'), kb.mainMenuKeyboard(lang, role));
+  const isAdmin = isEnvAdmin(client.telegram_id);
+  await bot.sendMessage(chatId, t(lang, 'main_menu'), kb.mainMenuKeyboard(lang, role, isAdmin));
 }
 
 /**
@@ -58,10 +59,10 @@ async function handleStart(bot, msg, order) {
     return;
   }
 
-  // Зарегистрирован: если был deep link — открыть карточку блюда
+  // Зарегистрирован: если был deep link — открыть меню с выбранным блюдом (1 шт)
   if (deepItemId && order) {
     await showMainMenu(bot, chatId, client);
-    await order.openDishCard(bot, chatId, client, deepItemId);
+    await order.openDishFromDeepLink(bot, chatId, client, deepItemId);
     return;
   }
 
@@ -134,7 +135,7 @@ async function handleRegistrationStep(bot, msg, order) {
       await showMainMenu(bot, chatId, updated);
 
       if (deepItemId && order) {
-        await order.openDishCard(bot, chatId, updated, deepItemId);
+        await order.openDishFromDeepLink(bot, chatId, updated, deepItemId);
       }
       return true;
     }
