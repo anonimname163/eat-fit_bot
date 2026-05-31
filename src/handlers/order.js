@@ -1,6 +1,6 @@
 // Процесс заказа: карточка блюда, корзина, оформление, транзакция создания заказа.
 const db = require('../db');
-const { t, dishName, dishDesc, formatMoney, categoryName } = require('../i18n');
+const { t, dishName, dishDesc, formatMoney, categoryName, esc } = require('../i18n');
 const state = require('../state');
 const kb = require('../keyboards');
 const menu = require('./menu');
@@ -21,18 +21,19 @@ async function openDishCard(bot, chatId, client, itemId) {
   const name = dishName(lang, item);
   const desc = dishDesc(lang, item);
   const price = `${formatMoney(item.price)} ${t(lang, 'currency')}`;
-  let text = `🍽 *${name}*\n`;
-  if (desc) text += `${desc}\n`;
-  text += `💵 ${price}`;
+  let text = `🍽 <b>${esc(name)}</b>\n`;
+  if (desc) text += `${esc(desc)}\n`;
+  text += `💵 ${esc(price)}`;
 
-  const opts = { parse_mode: 'Markdown', ...kb.dishCardKeyboard(lang, item.id) };
+  const opts = { parse_mode: 'HTML', ...kb.dishCardKeyboard(lang, item.id) };
 
   if (item.photo_url) {
     try {
       await bot.sendPhoto(chatId, item.photo_url, { caption: text, ...opts });
       return;
     } catch (err) {
-      console.error('[ERROR] sendPhoto карточки:', err.message);
+      const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+      console.error('[ERROR] sendPhoto карточки (item', item.id, '):', body);
     }
   }
   await bot.sendMessage(chatId, text, opts);

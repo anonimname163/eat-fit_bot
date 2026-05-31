@@ -119,10 +119,14 @@ async function handleAddDishStep(bot, msg) {
       let photoUrl = null;
       if (msg.photo && msg.photo.length) {
         photoUrl = msg.photo[msg.photo.length - 1].file_id; // лучшее качество
+      } else if (msg.document && msg.document.mime_type && msg.document.mime_type.startsWith('image/')) {
+        // Фото, отправленное как файл (без сжатия)
+        photoUrl = msg.document.file_id;
       } else if (msg.text && msg.text.trim() !== '-') {
         photoUrl = msg.text.trim();
       }
       data.photo_url = photoUrl;
+      console.log(`[INFO] Фото блюда: ${photoUrl ? 'сохранён file_id (' + photoUrl.slice(0, 12) + '…)' : 'без фото'}`);
 
       const { rows } = await db.query(
         `INSERT INTO menu_items (name_ru, name_uz, description_ru, description_uz, category, price, photo_url)
@@ -134,6 +138,15 @@ async function handleAddDishStep(bot, msg) {
       console.log(`[INFO] Создано блюдо #${item.id} (${item.name_ru})`);
 
       await bot.sendMessage(chatId, t(lang, 'dish_created'));
+      // Показать фото-превью (подтверждение, что file_id валиден)
+      if (item.photo_url) {
+        try {
+          await bot.sendPhoto(chatId, item.photo_url, { caption: `🍽 ${item.name_ru}` });
+        } catch (err) {
+          const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+          console.error('[ERROR] sendPhoto превью (item', item.id, '):', body);
+        }
+      }
       // Сразу выдать deep link и пост для канала
       await bot.sendMessage(chatId, `🔗 ${dishDeepLink(item.id)}`);
       await bot.sendMessage(chatId, buildChannelPost(item, lang));

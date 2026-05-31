@@ -361,4 +361,12 @@ function formatMoney(amount) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
-module.exports = { t, categoryName, dishName, dishDesc, statusText, formatMoney };
+/** Экранирование текста для parse_mode: 'HTML' (безопасно для названий/описаний). */
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+module.exports = { t, categoryName, dishName, dishDesc, statusText, formatMoney, esc };
