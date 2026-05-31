@@ -3,6 +3,7 @@ const db = require('../db');
 const { t, formatMoney, esc } = require('../i18n');
 const state = require('../state');
 const kb = require('../keyboards');
+const settings = require('../settings');
 const { getClient } = require('../middleware/registration');
 
 /** Показать профиль с кнопкой редактирования. */
@@ -24,11 +25,36 @@ async function showProfile(bot, chatId, client) {
   });
 }
 
-/** Показать баланс. */
+/** Показать баланс с кнопкой пополнения. */
 async function showBalance(bot, chatId, client) {
   const lang = client.language || 'ru';
   const text = `${esc(t(lang, 'balance_title'))}: <b>${esc(formatMoney(client.balance))} ${esc(t(lang, 'currency'))}</b>`;
-  await bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
+  await bot.sendMessage(chatId, text, {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [[{ text: t(lang, 'btn_topup'), callback_data: 'balance:topup' }]],
+    },
+  });
+}
+
+/** Показать инструкцию по пополнению с контактами (callback balance:topup). */
+async function showTopup(bot, query, client) {
+  const lang = client.language || 'ru';
+  await bot.answerCallbackQuery(query.id);
+
+  const tg = await settings.getSetting(settings.KEYS.TOPUP_TELEGRAM);
+  const phone = await settings.getSetting(settings.KEYS.TOPUP_PHONE);
+
+  if (!tg && !phone) {
+    await bot.sendMessage(query.message.chat.id, t(lang, 'topup_not_set'));
+    return;
+  }
+
+  const lines = [`<b>${esc(t(lang, 'topup_title'))}</b>`, '', esc(t(lang, 'topup_text')), ''];
+  if (tg) lines.push(`📱 ${esc(t(lang, 'topup_tg'))}: ${esc(tg)}`);
+  if (phone) lines.push(`📞 ${esc(t(lang, 'topup_phone'))}: ${esc(phone)}`);
+
+  await bot.sendMessage(query.message.chat.id, lines.join('\n'), { parse_mode: 'HTML' });
 }
 
 /** Меню выбора, какое поле профиля редактировать (callback profile:edit). */
@@ -124,6 +150,7 @@ async function handleProfileEditStep(bot, msg) {
 module.exports = {
   showProfile,
   showBalance,
+  showTopup,
   showEditProfile,
   startProfileField,
   handleProfileEditStep,

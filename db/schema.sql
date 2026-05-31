@@ -65,6 +65,12 @@ CREATE TABLE IF NOT EXISTS deposits (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Настройки приложения (ключ/значение): контакты для пополнения и т.п.
+CREATE TABLE IF NOT EXISTS app_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
+
 -- Индексы для частых выборок
 CREATE INDEX IF NOT EXISTS idx_orders_client  ON orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status  ON orders(status);

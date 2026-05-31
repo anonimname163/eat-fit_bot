@@ -93,6 +93,33 @@ const dict = {
   },
   currency: { ru: 'сум', uz: 'so‘m' },
 
+  // ---- Пополнение баланса (контакты) ----
+  btn_topup: { ru: '💳 Пополнить баланс', uz: '💳 Balansni to‘ldirish' },
+  topup_title: { ru: '💳 Пополнение баланса', uz: '💳 Balansni to‘ldirish' },
+  topup_text: {
+    ru: 'Чтобы пополнить баланс, напишите в Telegram или позвоните по номеру ниже:',
+    uz: 'Balansni to‘ldirish uchun quyidagi Telegram’ga yozing yoki raqamga qo‘ng‘iroq qiling:',
+  },
+  topup_tg: { ru: 'Telegram', uz: 'Telegram' },
+  topup_phone: { ru: 'Телефон', uz: 'Telefon' },
+  topup_not_set: {
+    ru: 'Контакты для пополнения пока не указаны. Обратитесь к администратору.',
+    uz: 'To‘ldirish uchun kontaktlar hali ko‘rsatilmagan. Administratorga murojaat qiling.',
+  },
+
+  // ---- Контакты пополнения в админке ----
+  admin_contacts: { ru: '📞 Контакты пополнения', uz: '📞 To‘ldirish kontaktlari' },
+  contacts_title: { ru: 'Контакты для пополнения баланса', uz: 'Balansni to‘ldirish kontaktlari' },
+  contact_edit_tg: { ru: '✏️ Telegram', uz: '✏️ Telegram' },
+  contact_edit_phone: { ru: '✏️ Телефон', uz: '✏️ Telefon' },
+  contact_ask_tg: {
+    ru: 'Введите Telegram для пополнения (например @username или ссылку https://t.me/...):',
+    uz: 'To‘ldirish uchun Telegram kiriting (masalan @username yoki https://t.me/... havola):',
+  },
+  contact_ask_phone: { ru: 'Введите номер телефона для пополнения:', uz: 'To‘ldirish uchun telefon raqamini kiriting:' },
+  contact_saved: { ru: 'Контакт сохранён ✅', uz: 'Kontakt saqlandi ✅' },
+  not_set_dash: { ru: 'не указан', uz: 'ko‘rsatilmagan' },
+
   // ---- Редактирование профиля ----
   btn_edit_profile: { ru: '✏️ Редактировать профиль', uz: '✏️ Profilni tahrirlash' },
   profile_choose_field: { ru: 'Что изменить?', uz: 'Nimani o‘zgartiramiz?' },

@@ -2,6 +2,7 @@
 const db = require('../db');
 const { t, dishName, formatMoney, categoryName, esc } = require('../i18n');
 const state = require('../state');
+const settings = require('../settings');
 const { getClient } = require('../middleware/registration');
 const { buildChannelPost, dishDeepLink } = require('../utils/deeplink');
 
@@ -44,9 +45,62 @@ async function showAdminPanel(bot, chatId, client) {
         [{ text: t(lang, 'admin_deposits'), callback_data: 'admin:deposits' }],
         [{ text: t(lang, 'admin_orders'), callback_data: 'admin:orders' }],
         [{ text: t(lang, 'admin_gen_post'), callback_data: 'admin:genpost' }],
+        [{ text: t(lang, 'admin_contacts'), callback_data: 'admin:contacts' }],
       ],
     },
   });
+}
+
+/** Показать текущие контакты пополнения + кнопки редактирования. */
+async function showContacts(bot, chatId, lang) {
+  const tg = await settings.getSetting(settings.KEYS.TOPUP_TELEGRAM);
+  const phone = await settings.getSetting(settings.KEYS.TOPUP_PHONE);
+  const lines = [
+    `<b>${esc(t(lang, 'contacts_title'))}</b>`,
+    '',
+    `📱 ${esc(t(lang, 'topup_tg'))}: ${esc(tg || t(lang, 'not_set_dash'))}`,
+    `📞 ${esc(t(lang, 'topup_phone'))}: ${esc(phone || t(lang, 'not_set_dash'))}`,
+  ];
+  await bot.sendMessage(chatId, lines.join('\n'), {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [[
+        { text: t(lang, 'contact_edit_tg'), callback_data: 'admin:contact:tg' },
+        { text: t(lang, 'contact_edit_phone'), callback_data: 'admin:contact:phone' },
+      ]],
+    },
+  });
+}
+
+/** Начать редактирование контакта (callback admin:contact:tg|phone). */
+async function startEditContact(bot, query, lang) {
+  const field = query.data.split(':')[2]; // tg | phone
+  await bot.answerCallbackQuery(query.id);
+  state.setSession(query.from.id, 'edit_contact', field, {});
+  const askKey = field === 'phone' ? 'contact_ask_phone' : 'contact_ask_tg';
+  await bot.sendMessage(query.message.chat.id, t(lang, askKey));
+}
+
+/** Шаг ввода значения контакта. Возвращает true если обработано. */
+async function handleContactStep(bot, msg) {
+  const telegramId = msg.from.id;
+  const chatId = msg.chat.id;
+  const session = state.getSession(telegramId);
+  if (!session || session.flow !== 'edit_contact') return false;
+
+  const client = await getClient(telegramId);
+  const lang = (client && client.language) || 'ru';
+  const value = (msg.text || '').trim();
+  if (!value) return true;
+
+  const key = session.step === 'phone' ? settings.KEYS.TOPUP_PHONE : settings.KEYS.TOPUP_TELEGRAM;
+  await settings.setSetting(key, value);
+  state.clearSession(telegramId);
+  console.log(`[INFO] Контакт пополнения (${session.step}) обновлён админом ${telegramId}`);
+
+  await bot.sendMessage(chatId, t(lang, 'contact_saved'));
+  await showContacts(bot, chatId, lang);
+  return true;
 }
 
 // ==================== Управление меню ====================
@@ -655,4 +709,7 @@ module.exports = {
   showOrdersOverview,
   showGenPostMenu,
   generatePost,
+  showContacts,
+  startEditContact,
+  handleContactStep,
 };

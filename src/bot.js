@@ -77,6 +77,7 @@ bot.on('message', async (msg) => {
     if (await admin.handleEditDishStep(bot, msg)) return;
     if (await admin.handleUserSearchStep(bot, msg)) return;
     if (await admin.handleDepositStep(bot, msg)) return;
+    if (await admin.handleContactStep(bot, msg)) return;
     if (await profile.handleProfileEditStep(bot, msg)) return;
 
     // 2) Команды
@@ -215,6 +216,17 @@ bot.on('callback_query', async (query) => {
       return;
     }
 
+    // --- Баланс: пополнение (показ контактов) ---
+    if (domain === 'balance') {
+      const client = await getClient(telegramId);
+      if (!isRegistered(client)) {
+        await bot.answerCallbackQuery(query.id, { text: t(lang, 'not_registered') });
+        return;
+      }
+      if (data.split(':')[1] === 'topup') await profile.showTopup(bot, query, client);
+      return;
+    }
+
     // --- Повар ---
     if (domain === 'cook') {
       if (!hasRole(actor, telegramId, ['cook', 'admin'])) {
@@ -286,6 +298,13 @@ bot.on('callback_query', async (query) => {
           break;
         case 'post':
           await admin.generatePost(bot, query, lang);
+          break;
+        case 'contacts':
+          await bot.answerCallbackQuery(query.id);
+          await admin.showContacts(bot, chatId, lang);
+          break;
+        case 'contact':
+          await admin.startEditContact(bot, query, lang);
           break;
         case 'dish':
           if (parts[2] === 'add') {
