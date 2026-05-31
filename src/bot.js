@@ -236,7 +236,7 @@ bot.on('callback_query', async (query) => {
           await bot.sendMessage(chatId, t(lang, 'admin_deposits'), {
             reply_markup: {
               inline_keyboard: [
-                [{ text: '➕ ' + t(lang, 'deposit_done').replace('✅', '').trim(), callback_data: 'admin:depadd' }],
+                [{ text: t(lang, 'deposit_add'), callback_data: 'admin:depadd' }],
                 [{ text: t(lang, 'deposit_history'), callback_data: 'admin:dephist' }],
               ],
             },

@@ -279,6 +279,10 @@ const dict = {
     uz: 'Taom rasmini yuboring yoki o‘tkazib yuborish uchun «-» yozing:',
   },
   dish_created: { ru: 'Блюдо создано ✅', uz: 'Taom yaratildi ✅' },
+  photo_save_failed: {
+    ru: '⚠️ Фото не принято Telegram (неверный файл). Блюдо сохранено без фото. Попробуйте загрузить другое изображение через ✏️ Редактировать → 🖼 Фото.',
+    uz: '⚠️ Rasm Telegram tomonidan qabul qilinmadi (noto‘g‘ri fayl). Taom rasmsiz saqlandi. ✏️ Tahrirlash → 🖼 Rasm orqali boshqa rasm yuklang.',
+  },
   dish_hidden: { ru: 'Блюдо скрыто', uz: 'Taom yashirildi' },
   dish_shown: { ru: 'Блюдо снова активно', uz: 'Taom yana faol' },
   dish_deleted: { ru: 'Блюдо удалено', uz: 'Taom o‘chirildi' },
@@ -303,6 +307,7 @@ const dict = {
   btn_change_role: { ru: '🔁 Изменить роль', uz: '🔁 Rolni o‘zgartirish' },
   role_changed: { ru: 'Роль изменена на', uz: 'Rol o‘zgartirildi:' },
 
+  deposit_add: { ru: '➕ Пополнить баланс', uz: '➕ Balansni to‘ldirish' },
   deposit_ask_client: {
     ru: 'Введите telegram_id или телефон клиента:',
     uz: 'Mijozning telegram_id yoki telefonini kiriting:',

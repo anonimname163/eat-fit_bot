@@ -176,6 +176,10 @@ async function handleAddDishStep(bot, msg) {
         } catch (err) {
           const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
           console.error('[ERROR] sendPhoto превью (item', item.id, '):', body);
+          // Фото битое — обнуляем и предупреждаем админа
+          await db.query('UPDATE menu_items SET photo_url = NULL WHERE id = $1', [item.id]);
+          item.photo_url = null;
+          await bot.sendMessage(chatId, t(lang, 'photo_save_failed'));
         }
       }
       // Сразу выдать deep link и пост для канала
@@ -352,6 +356,19 @@ async function handleEditDishStep(bot, msg) {
   await db.query(`UPDATE menu_items SET ${def.column} = $1 WHERE id = $2`, [value, id]);
   state.clearSession(telegramId);
   console.log(`[INFO] Блюдо #${id}: поле ${def.column} обновлено`);
+
+  // Для фото — сразу проверим валидность превью
+  if (def.type === 'photo') {
+    try {
+      await bot.sendPhoto(chatId, value, { caption: t(lang, 'edit_saved') });
+    } catch (err) {
+      const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+      console.error('[ERROR] sendPhoto превью при редактировании (item', id, '):', body);
+      await db.query('UPDATE menu_items SET photo_url = NULL WHERE id = $1', [id]);
+      await bot.sendMessage(chatId, t(lang, 'photo_save_failed'));
+    }
+    return true;
+  }
 
   await bot.sendMessage(chatId, t(lang, 'edit_saved'));
   // Показать обновлённую карточку
