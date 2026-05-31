@@ -219,6 +219,20 @@ async function updateAdminGroup(bot, order) {
   }
 }
 
+/**
+ * Отправить произвольное событие в админ-группу (пополнение, отмена и т.п.).
+ */
+async function notifyAdminEvent(bot, text) {
+  const groupId = process.env.ADMIN_GROUP_ID;
+  if (!groupId) return;
+  try {
+    await bot.sendMessage(groupId, text, { parse_mode: 'HTML' });
+  } catch (err) {
+    const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+    console.error(`[ERROR] notifyAdminEvent (group ${groupId}):`, body);
+  }
+}
+
 module.exports = {
   nowHM,
   getOrderItems,
@@ -227,4 +241,5 @@ module.exports = {
   notifyCourierGroup,
   notifyAdminGroup,
   updateAdminGroup,
+  notifyAdminEvent,
 };

@@ -101,7 +101,7 @@ async function sendDailyReport(bot, chatId) {
  */
 function startDailyReportScheduler(bot) {
   const offset = Number(process.env.TZ_OFFSET_HOURS || 5);
-  const reportHour = Number(process.env.DAILY_REPORT_HOUR || 23);
+  const reportHour = Number(process.env.DAILY_REPORT_HOUR || 19);
   let lastSentLabel = null;
 
   setInterval(async () => {

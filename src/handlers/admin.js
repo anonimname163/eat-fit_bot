@@ -3,6 +3,7 @@ const db = require('../db');
 const { t, dishName, formatMoney, categoryName, esc } = require('../i18n');
 const state = require('../state');
 const settings = require('../settings');
+const notify = require('../utils/notify');
 const { getClient } = require('../middleware/registration');
 const { buildChannelPost, dishDeepLink } = require('../utils/deeplink');
 
@@ -568,12 +569,16 @@ async function handleDepositStep(bot, msg) {
       console.log(`[INFO] Пополнение баланса клиента #${clientId} на ${amount} админом ${telegramId}`);
       await bot.sendMessage(chatId, `${t(lang, 'deposit_done')} (+${formatMoney(amount)} ${t(lang, 'currency')})`);
 
-      // Уведомить клиента
+      // Уведомить клиента и админ-группу
       try {
-        const { rows } = await db.query('SELECT telegram_id, language FROM clients WHERE id = $1', [clientId]);
+        const { rows } = await db.query('SELECT telegram_id, language, first_name, last_name FROM clients WHERE id = $1', [clientId]);
         if (rows.length) {
           const c = rows[0];
           await bot.sendMessage(c.telegram_id, `💰 +${formatMoney(amount)} ${t(c.language, 'currency')}`);
+          await notify.notifyAdminEvent(
+            bot,
+            `💵 <b>Пополнение баланса</b>\n👤 ${esc(`${c.first_name || ''} ${c.last_name || ''}`.trim())} (#${clientId})\n➕ ${esc(formatMoney(amount))} ${esc(t('ru', 'currency'))}\n🔑 админ: <code>${esc(telegramId)}</code>`
+          );
         }
       } catch (_) { /* игнор */ }
     } catch (err) {
@@ -622,10 +627,62 @@ async function showOrdersOverview(bot, chatId, lang) {
   }
   lines.push('');
   lines.push('—'.repeat(10));
+  const cancelButtons = [];
   for (const o of recent) {
     lines.push(`#${o.id} ${esc(o.first_name || '')} — ${esc(formatMoney(o.total_amount))} ${esc(t(lang, 'currency'))} [${esc(t(lang, `status_${o.status}`))}]`);
+    if (o.status !== 'done' && o.status !== 'cancelled') {
+      cancelButtons.push({ text: `🚫 #${o.id}`, callback_data: `admin:cancelorder:${o.id}` });
+    }
   }
-  await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'HTML' });
+
+  // Кнопки отмены/возврата активных заказов (по 3 в ряд)
+  const keyboard = [];
+  for (let i = 0; i < cancelButtons.length; i += 3) {
+    keyboard.push(cancelButtons.slice(i, i + 3));
+  }
+
+  await bot.sendMessage(chatId, lines.join('\n'), {
+    parse_mode: 'HTML',
+    reply_markup: keyboard.length ? { inline_keyboard: keyboard } : undefined,
+  });
+}
+
+/**
+ * Отмена / возврат заказа админом: статус → cancelled, возврат оплаченного
+ * с баланса обратно клиенту, уведомления клиенту и в админ-группу.
+ */
+async function cancelOrderByAdmin(bot, query, lang) {
+  const orderId = Number(query.data.split(':')[2]);
+  const { rows } = await db.query('SELECT * FROM orders WHERE id = $1', [orderId]);
+  if (!rows.length) {
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'error_generic') });
+    return;
+  }
+  const order = rows[0];
+  if (order.status === 'cancelled' || order.status === 'done') {
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'order_already_closed') });
+    return;
+  }
+
+  const refund = Number(order.paid_from_balance) || 0;
+  const updated = await db.withTransaction(async (tx) => {
+    if (refund > 0) {
+      await tx.query('UPDATE clients SET balance = balance + $1 WHERE id = $2', [refund, order.client_id]);
+    }
+    const { rows: u } = await tx.query(
+      `UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING *`,
+      [orderId]
+    );
+    return u[0];
+  });
+
+  await bot.answerCallbackQuery(query.id, { text: t(lang, 'order_cancelled_admin') });
+  console.log(`[ORDER] Заказ #${orderId} отменён админом ${query.from.id}, возврат ${refund}`);
+
+  await notify.notifyClientStatus(bot, updated, 'cancelled');
+  await notify.updateAdminGroup(bot, updated);
+  const refundText = refund > 0 ? `\n💸 Возврат на баланс: ${esc(formatMoney(refund))} ${esc(t('ru', 'currency'))}` : '';
+  await notify.notifyAdminEvent(bot, `❌ <b>Заказ #${orderId} отменён</b> админом <code>${esc(query.from.id)}</code>${refundText}`);
 }
 
 // ==================== Генерация постов ====================
@@ -708,6 +765,7 @@ module.exports = {
   handleDepositStep,
   showDepositHistory,
   showOrdersOverview,
+  cancelOrderByAdmin,
   showGenPostMenu,
   generatePost,
   showContacts,

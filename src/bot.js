@@ -297,9 +297,15 @@ bot.on('callback_query', async (query) => {
           await bot.answerCallbackQuery(query.id);
           await admin.showGenPostMenu(bot, chatId, lang);
           break;
-        case 'report':
-          await bot.answerCallbackQuery(query.id);
-          await report.sendDailyReport(bot, chatId);
+        case 'report': {
+          // Отправляем итоги в админ-группу (если задана), иначе в этот чат
+          const target = process.env.ADMIN_GROUP_ID || chatId;
+          await report.sendDailyReport(bot, target);
+          await bot.answerCallbackQuery(query.id, { text: t(lang, 'report_sent') });
+          break;
+        }
+        case 'cancelorder':
+          await admin.cancelOrderByAdmin(bot, query, lang);
           break;
         case 'post':
           await admin.generatePost(bot, query, lang);

@@ -303,7 +303,11 @@ const dict = {
   admin_deposits: { ru: '💰 Депозиты', uz: '💰 Depozitlar' },
   admin_orders: { ru: '📊 Заказы', uz: '📊 Buyurtmalar' },
   admin_gen_post: { ru: '📢 Генерировать пост', uz: '📢 Post yaratish' },
-  admin_report: { ru: '📈 Итоги дня', uz: '📈 Kun yakunlari' },
+  admin_report: { ru: '📈 Отправить итоги', uz: '📈 Yakunlarni yuborish' },
+  report_sent: { ru: 'Итоги отправлены ✅', uz: 'Yakunlar yuborildi ✅' },
+  btn_cancel_order: { ru: '🚫 Отменить', uz: '🚫 Bekor qilish' },
+  order_cancelled_admin: { ru: 'Заказ отменён, средства возвращены', uz: 'Buyurtma bekor qilindi, mablag‘ qaytarildi' },
+  order_already_closed: { ru: 'Заказ уже завершён или отменён', uz: 'Buyurtma allaqachon yakunlangan yoki bekor qilingan' },
 
   btn_add_dish: { ru: '➕ Добавить блюдо', uz: '➕ Taom qo‘shish' },
   btn_edit: { ru: '✏️ Редактировать', uz: '✏️ Tahrirlash' },
