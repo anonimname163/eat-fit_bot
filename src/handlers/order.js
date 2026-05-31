@@ -41,16 +41,85 @@ async function openDishCard(bot, chatId, client, itemId) {
 }
 
 /**
- * Начать обычный заказ (кнопка «Сделать заказ»): показать меню.
+ * Собрать «живую» панель корзины: текст с количеством каждого блюда + кнопки.
  */
-async function startOrder(bot, chatId, client) {
-  await menu.showMenu(bot, chatId, client);
-  const lang = client.language || 'ru';
-  await bot.sendMessage(chatId, t(lang, 'add_something_else'), kb.addMoreKeyboard(lang));
+function buildCartPanel(lang, cart) {
+  const lines = [`🛒 <b>${esc(t(lang, 'cart_title'))}</b>`, ''];
+  if (state.cartIsEmpty(cart)) {
+    lines.push(esc(t(lang, 'cart_empty')));
+  } else {
+    for (const { item, quantity } of cart.items.values()) {
+      const sum = formatMoney(Number(item.price) * quantity);
+      lines.push(`• ${esc(dishName(lang, item))} — ${quantity} ${esc(t(lang, 'pcs'))} × ${esc(formatMoney(item.price))} = ${esc(sum)} ${esc(t(lang, 'currency'))}`);
+    }
+    lines.push('');
+    lines.push(`💵 <b>${esc(t(lang, 'cart_total'))}: ${esc(formatMoney(state.cartTotal(cart)))} ${esc(t(lang, 'currency'))}</b>`);
+  }
+
+  const keyboard = [
+    [
+      { text: t(lang, 'btn_drinks'), callback_data: 'cart:cat:drink' },
+      { text: t(lang, 'btn_desserts'), callback_data: 'cart:cat:dessert' },
+    ],
+  ];
+  if (!state.cartIsEmpty(cart)) {
+    keyboard.push([{ text: t(lang, 'btn_checkout'), callback_data: 'cart:checkout' }]);
+  }
+  return { text: lines.join('\n'), keyboard };
 }
 
 /**
- * Добавить блюдо в корзину (callback cart:add:<id>).
+ * Отправить новую панель корзины внизу (старую удалить, если была).
+ */
+async function sendCartPanel(bot, chatId, client) {
+  const lang = client.language || 'ru';
+  const cart = state.getCart(client.telegram_id);
+  if (cart.panelMessageId && cart.panelChatId) {
+    try { await bot.deleteMessage(cart.panelChatId, cart.panelMessageId); } catch (_) { /* игнор */ }
+  }
+  const { text, keyboard } = buildCartPanel(lang, cart);
+  const sent = await bot.sendMessage(chatId, text, {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: keyboard },
+  });
+  cart.panelMessageId = sent.message_id;
+  cart.panelChatId = chatId;
+}
+
+/**
+ * Обновить существующую панель корзины на месте (без нового сообщения).
+ */
+async function updateCartPanel(bot, chatId, client) {
+  const lang = client.language || 'ru';
+  const cart = state.getCart(client.telegram_id);
+  if (!cart.panelMessageId) {
+    await sendCartPanel(bot, chatId, client);
+    return;
+  }
+  const { text, keyboard } = buildCartPanel(lang, cart);
+  try {
+    await bot.editMessageText(text, {
+      chat_id: cart.panelChatId,
+      message_id: cart.panelMessageId,
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: keyboard },
+    });
+  } catch (_) {
+    // Сообщение нельзя отредактировать (удалено/устарело) — отправим заново
+    await sendCartPanel(bot, chatId, client);
+  }
+}
+
+/**
+ * Начать обычный заказ (кнопка «Сделать заказ»): показать меню + панель корзины.
+ */
+async function startOrder(bot, chatId, client) {
+  await menu.showMenu(bot, chatId, client);
+  await sendCartPanel(bot, chatId, client);
+}
+
+/**
+ * Добавить блюдо в корзину (callback cart:add:<id>) — обновляем панель на месте.
  */
 async function addToCart(bot, query, client) {
   const chatId = query.message.chat.id;
@@ -65,7 +134,7 @@ async function addToCart(bot, query, client) {
 
   state.addToCart(client.telegram_id, item);
   await bot.answerCallbackQuery(query.id, { text: t(lang, 'added_to_cart') });
-  await bot.sendMessage(chatId, t(lang, 'add_something_else'), kb.addMoreKeyboard(lang));
+  await updateCartPanel(bot, chatId, client);
 }
 
 /**
@@ -98,7 +167,8 @@ async function showCategory(bot, query, client) {
       },
     });
   }
-  await bot.sendMessage(chatId, t(lang, 'add_something_else'), kb.addMoreKeyboard(lang));
+  // Свежая панель корзины внизу, чтобы кнопки оформления были под рукой
+  await sendCartPanel(bot, chatId, client);
 }
 
 /**
@@ -132,6 +202,12 @@ async function checkout(bot, query, client) {
   if (state.cartIsEmpty(cart)) {
     await bot.sendMessage(chatId, t(lang, 'cart_empty'));
     return;
+  }
+
+  // Панель корзины больше не нужна — убираем её
+  if (cart.panelMessageId && cart.panelChatId) {
+    try { await bot.deleteMessage(cart.panelChatId, cart.panelMessageId); } catch (_) { /* игнор */ }
+    cart.panelMessageId = null;
   }
 
   // Запросим комментарий, затем покажем подтверждение

@@ -4,7 +4,9 @@
       "Bash(npm install *)",
       "Bash(git push *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(node --check src/handlers/order.js)",
+      "Bash(node -e ' *)"
     ]
   }
 }
