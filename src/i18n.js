@@ -164,6 +164,10 @@ const dict = {
     ru: 'Оформление отменено.',
     uz: 'Rasmiylashtirish bekor qilindi.',
   },
+  balance_insufficient: {
+    ru: '❌ Недостаточно средств на балансе. Выберите оплату при получении.',
+    uz: '❌ Balansda mablag‘ yetarli emas. Yetkazib berishda to‘lashni tanlang.',
+  },
   ask_comment: {
     ru: 'Добавьте комментарий к заказу (или напишите «-» чтобы пропустить):',
     uz: 'Buyurtmaga izoh qoldiring (yoki o‘tkazib yuborish uchun «-» yozing):',

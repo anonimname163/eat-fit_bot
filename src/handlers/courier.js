@@ -1,6 +1,6 @@
 // Интерфейс курьера.
 const db = require('../db');
-const { t, formatMoney } = require('../i18n');
+const { t, formatMoney, esc } = require('../i18n');
 const notify = require('../utils/notify');
 
 /** Показать панель курьера: заказы со статусом delivering. */
@@ -21,10 +21,10 @@ async function showCourierPanel(bot, chatId, client) {
   for (const order of orders) {
     const taken = order.courier_id ? `\n👤 (взят)` : '';
     const lines = [
-      `*${t(lang, 'order_label')} #${order.id}*`,
-      `${t(lang, 'group_address')}: ${order.delivery_address || '-'}`,
-      `${t(lang, 'group_phone')}: ${order.phone || '-'}`,
-      `💵 ${formatMoney(order.total_amount)} ${t(lang, 'currency')}${taken}`,
+      `<b>${esc(t(lang, 'order_label'))} #${order.id}</b>`,
+      `${esc(t(lang, 'group_address'))}: ${esc(order.delivery_address || '-')}`,
+      `${esc(t(lang, 'group_phone'))}: ${esc(order.phone || '-')}`,
+      `💵 ${esc(formatMoney(order.total_amount))} ${esc(t(lang, 'currency'))}${taken}`,
     ];
 
     const buttons = [];
@@ -35,7 +35,7 @@ async function showCourierPanel(bot, chatId, client) {
     }
 
     await bot.sendMessage(chatId, lines.join('\n'), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [buttons] },
     });
   }

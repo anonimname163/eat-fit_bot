@@ -1,6 +1,6 @@
 // Интерфейс повара.
 const db = require('../db');
-const { t } = require('../i18n');
+const { t, esc } = require('../i18n');
 const notify = require('../utils/notify');
 const { getClient } = require('../middleware/registration');
 
@@ -34,12 +34,12 @@ async function showCookPanel(bot, chatId, client) {
 
   for (const order of orders) {
     const items = await notify.getOrderItems(order.id);
-    const lines = [`*${t(lang, 'order_label')} #${order.id}* — ${t(lang, `status_${order.status}`)}`];
+    const lines = [`<b>${esc(t(lang, 'order_label'))} #${order.id}</b> — ${esc(t(lang, `status_${order.status}`))}`];
     for (const it of items) {
       const nm = lang === 'uz' ? it.name_uz : it.name_ru;
-      lines.push(`• ${nm} x${it.quantity}`);
+      lines.push(`• ${esc(nm)} x${it.quantity}`);
     }
-    if (order.comment) lines.push(`${t(lang, 'group_comment')}: ${order.comment}`);
+    if (order.comment) lines.push(`${esc(t(lang, 'group_comment'))}: ${esc(order.comment)}`);
 
     const buttons = [];
     if (order.status === 'pending' || order.status === 'confirmed') {
@@ -50,7 +50,7 @@ async function showCookPanel(bot, chatId, client) {
     }
 
     await bot.sendMessage(chatId, lines.join('\n'), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: { inline_keyboard: [buttons] },
     });
   }

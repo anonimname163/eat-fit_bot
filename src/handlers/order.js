@@ -83,13 +83,13 @@ async function showCategory(bot, query, client) {
     return;
   }
 
-  await bot.sendMessage(chatId, `*${categoryName(lang, category)}*`, { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, `<b>${esc(categoryName(lang, category))}</b>`, { parse_mode: 'HTML' });
   for (const item of items) {
     const name = dishName(lang, item);
     const price = `${formatMoney(item.price)} ${t(lang, 'currency')}`;
-    const text = `🍽 *${name}* — ${price}`;
+    const text = `🍽 <b>${esc(name)}</b> — ${esc(price)}`;
     await bot.sendMessage(chatId, text, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [[
           { text: t(lang, 'btn_add_to_cart'), callback_data: `cart:add:${item.id}` },
@@ -104,17 +104,17 @@ async function showCategory(bot, query, client) {
  * Собрать текст корзины.
  */
 function renderCart(lang, cart, client) {
-  const lines = [`🛒 *${t(lang, 'cart_title')}*`, ''];
+  const lines = [`🛒 <b>${esc(t(lang, 'cart_title'))}</b>`, ''];
   for (const { item, quantity } of cart.items.values()) {
     const name = dishName(lang, item);
     const sum = formatMoney(Number(item.price) * quantity);
-    lines.push(`• ${name} x${quantity} — ${sum} ${t(lang, 'currency')}`);
+    lines.push(`• ${esc(name)} x${quantity} — ${esc(sum)} ${esc(t(lang, 'currency'))}`);
   }
   const total = state.cartTotal(cart);
   lines.push('');
-  lines.push(`💵 *${t(lang, 'cart_total')}: ${formatMoney(total)} ${t(lang, 'currency')}*`);
-  lines.push(`📍 ${t(lang, 'cart_address')}: ${client.address || '-'}`);
-  lines.push(`💰 ${t(lang, 'profile_balance')}: ${formatMoney(client.balance)} ${t(lang, 'currency')}`);
+  lines.push(`💵 <b>${esc(t(lang, 'cart_total'))}: ${esc(formatMoney(total))} ${esc(t(lang, 'currency'))}</b>`);
+  lines.push(`📍 ${esc(t(lang, 'cart_address'))}: ${esc(client.address || '-')}`);
+  lines.push(`💰 ${esc(t(lang, 'profile_balance'))}: ${esc(formatMoney(client.balance))} ${esc(t(lang, 'currency'))}`);
   return lines.join('\n');
 }
 
@@ -172,8 +172,9 @@ async function handleCheckoutStep(bot, msg) {
     buttons.push([{ text: t(lang, 'btn_pay_cash'), callback_data: 'order:pay:cash' }]);
     buttons.push([{ text: t(lang, 'btn_cancel'), callback_data: 'order:cancel' }]);
 
+    console.log(`[ORDER] Клиент ${telegramId} перешёл к оплате (позиций: ${cart.items.size}, сумма: ${total})`);
     await bot.sendMessage(chatId, text, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: { inline_keyboard: buttons },
     });
     return true;
@@ -199,7 +200,7 @@ async function choosePayment(bot, query, client) {
   cart.payFromBalance = method === 'balance';
 
   await bot.sendMessage(chatId, renderCart(lang, cart, client), {
-    parse_mode: 'Markdown',
+    parse_mode: 'HTML',
     reply_markup: {
       inline_keyboard: [
         [{ text: t(lang, 'btn_confirm_order'), callback_data: 'order:confirm' }],
@@ -226,6 +227,7 @@ async function confirmOrder(bot, query, client) {
 
   const total = state.cartTotal(cart);
   const cartItems = [...cart.items.values()];
+  console.log(`[ORDER] confirmOrder: клиент ${telegramId}, позиций ${cartItems.length}, сумма ${total}, оплата ${cart.payFromBalance ? 'баланс' : 'наличные'}`);
 
   try {
     const order = await db.withTransaction(async (tx) => {
@@ -280,9 +282,10 @@ async function confirmOrder(bot, query, client) {
     await notify.notifyCookGroup(bot, order);
   } catch (err) {
     if (err.message === 'INSUFFICIENT_BALANCE') {
-      await bot.sendMessage(chatId, t(lang, 'btn_pay_cash'));
+      await bot.sendMessage(chatId, t(lang, 'balance_insufficient'));
     } else {
-      console.error('[ERROR] confirmOrder:', err);
+      const body = err.response && err.response.body ? JSON.stringify(err.response.body) : (err.stack || err.message);
+      console.error('[ERROR] confirmOrder:', body);
       await bot.sendMessage(chatId, t(lang, 'error_generic'));
     }
   }
@@ -315,18 +318,18 @@ async function showMyOrders(bot, chatId, client) {
     return;
   }
 
-  await bot.sendMessage(chatId, `*${t(lang, 'my_orders_title')}*`, { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, `<b>${esc(t(lang, 'my_orders_title'))}</b>`, { parse_mode: 'HTML' });
 
   for (const order of orders) {
     const items = await notify.getOrderItems(order.id);
-    const lines = [`*${t(lang, 'order_label')} #${order.id}*`];
+    const lines = [`<b>${esc(t(lang, 'order_label'))} #${order.id}</b>`];
     for (const it of items) {
       const nm = lang === 'uz' ? it.name_uz : it.name_ru;
-      lines.push(`• ${nm} x${it.quantity}`);
+      lines.push(`• ${esc(nm)} x${it.quantity}`);
     }
-    lines.push(`💵 ${formatMoney(order.total_amount)} ${t(lang, 'currency')}`);
-    lines.push(`📦 ${t(lang, 'status_label')}: ${t(lang, `status_${order.status}`)}`);
-    await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'Markdown' });
+    lines.push(`💵 ${esc(formatMoney(order.total_amount))} ${esc(t(lang, 'currency'))}`);
+    lines.push(`📦 ${esc(t(lang, 'status_label'))}: ${esc(t(lang, `status_${order.status}`))}`);
+    await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'HTML' });
   }
 }
 

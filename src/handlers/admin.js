@@ -35,8 +35,8 @@ function extractPhoto(msg) {
 /** Открыть главную панель администратора. */
 async function showAdminPanel(bot, chatId, client) {
   const lang = client.language || 'ru';
-  await bot.sendMessage(chatId, `*${t(lang, 'admin_panel_title')}*`, {
-    parse_mode: 'Markdown',
+  await bot.sendMessage(chatId, `<b>${esc(t(lang, 'admin_panel_title'))}</b>`, {
+    parse_mode: 'HTML',
     reply_markup: {
       inline_keyboard: [
         [{ text: t(lang, 'admin_menu_mgmt'), callback_data: 'admin:menu' }],
@@ -400,15 +400,15 @@ async function handleUserSearchStep(bot, msg) {
       [u.id]
     );
     const lines = [
-      `👤 *${u.first_name || ''} ${u.last_name || ''}*`.trim(),
-      `ID: \`${u.telegram_id}\``,
-      `${t(lang, 'profile_phone')}: ${u.phone || '-'}`,
-      `${t(lang, 'profile_balance')}: ${formatMoney(u.balance)} ${t(lang, 'currency')}`,
-      `Role: ${u.role}`,
-      `${t(lang, 'btn_my_orders')}: ${orderCount[0].c}`,
+      `👤 <b>${esc(`${u.first_name || ''} ${u.last_name || ''}`.trim())}</b>`,
+      `ID: <code>${esc(u.telegram_id)}</code>`,
+      `${esc(t(lang, 'profile_phone'))}: ${esc(u.phone || '-')}`,
+      `${esc(t(lang, 'profile_balance'))}: ${esc(formatMoney(u.balance))} ${esc(t(lang, 'currency'))}`,
+      `Role: ${esc(u.role)}`,
+      `${esc(t(lang, 'btn_my_orders'))}: ${orderCount[0].c}`,
     ];
     await bot.sendMessage(chatId, lines.join('\n'), {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [[{ text: t(lang, 'btn_change_role'), callback_data: `admin:role:${u.telegram_id}` }]],
       },
@@ -524,11 +524,11 @@ async function showDepositHistory(bot, chatId, lang) {
     await bot.sendMessage(chatId, t(lang, 'deposit_history') + '\n—');
     return;
   }
-  const lines = [`*${t(lang, 'deposit_history')}*`];
+  const lines = [`<b>${esc(t(lang, 'deposit_history'))}</b>`];
   for (const d of rows) {
-    lines.push(`• ${d.first_name || ''} (${d.phone || '-'}): +${formatMoney(d.amount)} ${t(lang, 'currency')}`);
+    lines.push(`• ${esc(d.first_name || '')} (${esc(d.phone || '-')}): +${esc(formatMoney(d.amount))} ${esc(t(lang, 'currency'))}`);
   }
-  await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'HTML' });
 }
 
 // ==================== Заказы (обзор) ====================
@@ -544,16 +544,16 @@ async function showOrdersOverview(bot, chatId, lang) {
       ORDER BY o.id DESC LIMIT 10`
   );
 
-  const lines = [`*${t(lang, 'admin_orders')}*`, ''];
+  const lines = [`<b>${esc(t(lang, 'admin_orders'))}</b>`, ''];
   for (const r of rows) {
-    lines.push(`${t(lang, `status_${r.status}`)}: ${r.c} (${formatMoney(r.sum)} ${t(lang, 'currency')})`);
+    lines.push(`${esc(t(lang, `status_${r.status}`))}: ${r.c} (${esc(formatMoney(r.sum))} ${esc(t(lang, 'currency'))})`);
   }
   lines.push('');
   lines.push('—'.repeat(10));
   for (const o of recent) {
-    lines.push(`#${o.id} ${o.first_name || ''} — ${formatMoney(o.total_amount)} ${t(lang, 'currency')} [${t(lang, `status_${o.status}`)}]`);
+    lines.push(`#${o.id} ${esc(o.first_name || '')} — ${esc(formatMoney(o.total_amount))} ${esc(t(lang, 'currency'))} [${esc(t(lang, `status_${o.status}`))}]`);
   }
-  await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'Markdown' });
+  await bot.sendMessage(chatId, lines.join('\n'), { parse_mode: 'HTML' });
 }
 
 // ==================== Генерация постов ====================
