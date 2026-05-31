@@ -280,6 +280,17 @@ const dict = {
   dish_deleted: { ru: 'Блюдо удалено', uz: 'Taom o‘chirildi' },
   invalid_price: { ru: 'Введите корректное число:', uz: 'To‘g‘ri raqam kiriting:' },
 
+  // ---- Редактирование блюда ----
+  edit_choose_field: { ru: 'Что отредактировать?', uz: 'Nimani tahrirlash?' },
+  field_name_ru: { ru: '📝 Название (RU)', uz: '📝 Nomi (RU)' },
+  field_name_uz: { ru: '📝 Название (UZ)', uz: '📝 Nomi (UZ)' },
+  field_desc_ru: { ru: '📄 Описание (RU)', uz: '📄 Tavsif (RU)' },
+  field_desc_uz: { ru: '📄 Описание (UZ)', uz: '📄 Tavsif (UZ)' },
+  field_category: { ru: '🗂 Категория', uz: '🗂 Kategoriya' },
+  field_price: { ru: '💵 Цена', uz: '💵 Narx' },
+  field_photo: { ru: '🖼 Фото', uz: '🖼 Rasm' },
+  edit_saved: { ru: 'Изменения сохранены ✅', uz: 'O‘zgarishlar saqlandi ✅' },
+
   users_ask_query: {
     ru: 'Введите номер телефона или username для поиска:',
     uz: 'Qidirish uchun telefon raqami yoki username kiriting:',

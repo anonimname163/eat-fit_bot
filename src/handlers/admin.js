@@ -1,11 +1,36 @@
 // Панель администратора: меню, пользователи, депозиты, заказы, генерация постов.
 const db = require('../db');
-const { t, dishName, formatMoney, categoryName } = require('../i18n');
+const { t, dishName, formatMoney, categoryName, esc } = require('../i18n');
 const state = require('../state');
 const { getClient } = require('../middleware/registration');
 const { buildChannelPost, dishDeepLink } = require('../utils/deeplink');
 
 const ROLES = ['client', 'cook', 'courier', 'admin'];
+
+/**
+ * Извлечь file_id фото из сообщения любого типа:
+ * - сжатое фото (msg.photo) любого формата
+ * - изображение, отправленное как файл/документ (png, jpg, jpeg, webp, gif, heic…)
+ * - прямая ссылка-URL текстом
+ * Возвращает строку (file_id или URL) либо null.
+ */
+function extractPhoto(msg) {
+  if (msg.photo && msg.photo.length) {
+    return msg.photo[msg.photo.length - 1].file_id; // лучшее качество
+  }
+  if (msg.document) {
+    const mime = msg.document.mime_type || '';
+    const fname = (msg.document.file_name || '').toLowerCase();
+    const isImage =
+      mime.startsWith('image/') ||
+      /\.(png|jpe?g|webp|gif|bmp|tiff?|heic|heif)$/i.test(fname);
+    if (isImage) return msg.document.file_id;
+  }
+  if (msg.text && msg.text.trim() && msg.text.trim() !== '-') {
+    return msg.text.trim();
+  }
+  return null;
+}
 
 /** Открыть главную панель администратора. */
 async function showAdminPanel(bot, chatId, client) {
@@ -28,29 +53,43 @@ async function showAdminPanel(bot, chatId, client) {
 
 async function showMenuManagement(bot, chatId, lang) {
   const { rows } = await db.query('SELECT * FROM menu_items ORDER BY id');
-  await bot.sendMessage(chatId, `*${t(lang, 'admin_menu_mgmt')}*`, {
-    parse_mode: 'Markdown',
+  await bot.sendMessage(chatId, `<b>${esc(t(lang, 'admin_menu_mgmt'))}</b>`, {
+    parse_mode: 'HTML',
     reply_markup: {
       inline_keyboard: [[{ text: t(lang, 'btn_add_dish'), callback_data: 'admin:dish:add' }]],
     },
   });
 
   for (const item of rows) {
-    const status = item.is_active ? '🟢' : '🔴';
-    const text = `${status} *${dishName(lang, item)}* — ${formatMoney(item.price)} ${t(lang, 'currency')}\n_${categoryName(lang, item.category)}_`;
-    const toggleBtn = item.is_active
-      ? { text: t(lang, 'btn_hide'), callback_data: `admin:dish:hide:${item.id}` }
-      : { text: t(lang, 'btn_show'), callback_data: `admin:dish:show:${item.id}` };
-    await bot.sendMessage(chatId, text, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [[
-          toggleBtn,
-          { text: t(lang, 'btn_delete'), callback_data: `admin:dish:del:${item.id}` },
-        ]],
-      },
-    });
+    const card = dishMgmtCard(lang, item);
+    await bot.sendMessage(chatId, card.text, card.opts);
   }
+}
+
+/** Сборка карточки блюда в управлении меню (текст + кнопки). */
+function dishMgmtCard(lang, item) {
+  const status = item.is_active ? '🟢' : '🔴';
+  const text =
+    `${status} <b>${esc(dishName(lang, item))}</b> — ${esc(formatMoney(item.price))} ${esc(t(lang, 'currency'))}\n` +
+    `<i>${esc(categoryName(lang, item.category))}</i>`;
+  const toggleBtn = item.is_active
+    ? { text: t(lang, 'btn_hide'), callback_data: `admin:dish:hide:${item.id}` }
+    : { text: t(lang, 'btn_show'), callback_data: `admin:dish:show:${item.id}` };
+  return {
+    text,
+    opts: {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: t(lang, 'btn_edit'), callback_data: `admin:dish:edit:${item.id}` },
+            toggleBtn,
+          ],
+          [{ text: t(lang, 'btn_delete'), callback_data: `admin:dish:del:${item.id}` }],
+        ],
+      },
+    },
+  };
 }
 
 /** Начать диалог добавления блюда. */
@@ -116,17 +155,9 @@ async function handleAddDishStep(bot, msg) {
     }
 
     case 'photo': {
-      let photoUrl = null;
-      if (msg.photo && msg.photo.length) {
-        photoUrl = msg.photo[msg.photo.length - 1].file_id; // лучшее качество
-      } else if (msg.document && msg.document.mime_type && msg.document.mime_type.startsWith('image/')) {
-        // Фото, отправленное как файл (без сжатия)
-        photoUrl = msg.document.file_id;
-      } else if (msg.text && msg.text.trim() !== '-') {
-        photoUrl = msg.text.trim();
-      }
+      const photoUrl = extractPhoto(msg);
       data.photo_url = photoUrl;
-      console.log(`[INFO] Фото блюда: ${photoUrl ? 'сохранён file_id (' + photoUrl.slice(0, 12) + '…)' : 'без фото'}`);
+      console.log(`[INFO] Фото блюда: ${photoUrl ? 'сохранён (' + photoUrl.slice(0, 12) + '…)' : 'без фото'}`);
 
       const { rows } = await db.query(
         `INSERT INTO menu_items (name_ru, name_uz, description_ru, description_uz, category, price, photo_url)
@@ -198,22 +229,138 @@ async function dishToggle(bot, query, lang) {
   try {
     const { rows } = await db.query('SELECT * FROM menu_items WHERE id = $1', [id]);
     if (rows.length) {
-      const item = rows[0];
-      const status = item.is_active ? '🟢' : '🔴';
-      const text = `${status} *${dishName(lang, item)}* — ${formatMoney(item.price)} ${t(lang, 'currency')}\n_${categoryName(lang, item.category)}_`;
-      const toggleBtn = item.is_active
-        ? { text: t(lang, 'btn_hide'), callback_data: `admin:dish:hide:${item.id}` }
-        : { text: t(lang, 'btn_show'), callback_data: `admin:dish:show:${item.id}` };
-      await bot.editMessageText(text, {
+      const card = dishMgmtCard(lang, rows[0]);
+      await bot.editMessageText(card.text, {
         chat_id: query.message.chat.id,
         message_id: query.message.message_id,
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [[toggleBtn, { text: t(lang, 'btn_delete'), callback_data: `admin:dish:del:${item.id}` }]],
-        },
+        parse_mode: 'HTML',
+        reply_markup: card.opts.reply_markup,
       });
     }
   } catch (_) { /* игнор */ }
+}
+
+// ==================== Редактирование блюда ====================
+
+// Поля для редактирования: ключ → { column, prompt(label key), type }
+const EDIT_FIELDS = {
+  name_ru: { column: 'name_ru', prompt: 'dish_ask_name_ru', label: 'field_name_ru', type: 'text' },
+  name_uz: { column: 'name_uz', prompt: 'dish_ask_name_uz', label: 'field_name_uz', type: 'text' },
+  desc_ru: { column: 'description_ru', prompt: 'dish_ask_desc_ru', label: 'field_desc_ru', type: 'text' },
+  desc_uz: { column: 'description_uz', prompt: 'dish_ask_desc_uz', label: 'field_desc_uz', type: 'text' },
+  price: { column: 'price', prompt: 'dish_ask_price', label: 'field_price', type: 'price' },
+  photo: { column: 'photo_url', prompt: 'dish_ask_photo', label: 'field_photo', type: 'photo' },
+  category: { column: 'category', prompt: 'dish_ask_category', label: 'field_category', type: 'category' },
+};
+
+/** Показать меню выбора поля для редактирования (callback admin:dish:edit:<id>). */
+async function showEditFields(bot, query, lang) {
+  const id = Number(query.data.split(':')[3]);
+  await bot.answerCallbackQuery(query.id);
+  const { rows } = await db.query('SELECT * FROM menu_items WHERE id = $1', [id]);
+  if (!rows.length) {
+    await bot.sendMessage(query.message.chat.id, t(lang, 'dish_not_found'));
+    return;
+  }
+  const item = rows[0];
+  const keys = ['name_ru', 'name_uz', 'desc_ru', 'desc_uz', 'category', 'price', 'photo'];
+  const buttons = keys.map((k) => [{ text: t(lang, EDIT_FIELDS[k].label), callback_data: `admin:editf:${id}:${k}` }]);
+  await bot.sendMessage(
+    query.message.chat.id,
+    `${esc(t(lang, 'edit_choose_field'))}\n🍽 <b>${esc(dishName(lang, item))}</b>`,
+    { parse_mode: 'HTML', reply_markup: { inline_keyboard: buttons } }
+  );
+}
+
+/** Начать редактирование конкретного поля (callback admin:editf:<id>:<field>). */
+async function startEditField(bot, query, lang) {
+  const parts = query.data.split(':'); // admin:editf:<id>:<field>
+  const id = Number(parts[2]);
+  const field = parts[3];
+  const def = EDIT_FIELDS[field];
+  if (!def) {
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+  await bot.answerCallbackQuery(query.id);
+  const chatId = query.message.chat.id;
+  const telegramId = query.from.id;
+
+  if (def.type === 'category') {
+    // Выбор категории кнопками
+    await bot.sendMessage(chatId, t(lang, 'dish_ask_category'), {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: t(lang, 'cat_main'), callback_data: `admin:editcat:${id}:main` },
+          { text: t(lang, 'cat_drink'), callback_data: `admin:editcat:${id}:drink` },
+          { text: t(lang, 'cat_dessert'), callback_data: `admin:editcat:${id}:dessert` },
+        ]],
+      },
+    });
+    return;
+  }
+
+  state.setSession(telegramId, 'edit_dish', field, { id });
+  await bot.sendMessage(chatId, t(lang, def.prompt));
+}
+
+/** Установить категорию при редактировании (callback admin:editcat:<id>:<cat>). */
+async function handleEditCategory(bot, query, lang) {
+  const parts = query.data.split(':'); // admin:editcat:<id>:<cat>
+  const id = Number(parts[2]);
+  const category = parts[3];
+  await bot.answerCallbackQuery(query.id, { text: t(lang, 'edit_saved') });
+  await db.query('UPDATE menu_items SET category = $1 WHERE id = $2', [category, id]);
+  console.log(`[INFO] Блюдо #${id}: категория → ${category}`);
+}
+
+/** Шаг ввода нового значения поля (текст/фото). Возвращает true если обработано. */
+async function handleEditDishStep(bot, msg) {
+  const telegramId = msg.from.id;
+  const chatId = msg.chat.id;
+  const session = state.getSession(telegramId);
+  if (!session || session.flow !== 'edit_dish') return false;
+
+  const client = await getClient(telegramId);
+  const lang = (client && client.language) || 'ru';
+  const field = session.step;
+  const def = EDIT_FIELDS[field];
+  const id = session.data.id;
+  if (!def) {
+    state.clearSession(telegramId);
+    return true;
+  }
+
+  let value;
+  if (def.type === 'price') {
+    value = Number((msg.text || '').replace(/\s/g, '').replace(',', '.'));
+    if (!value || value <= 0) {
+      await bot.sendMessage(chatId, t(lang, 'invalid_price'));
+      return true;
+    }
+  } else if (def.type === 'photo') {
+    value = extractPhoto(msg);
+    if (!value) {
+      await bot.sendMessage(chatId, t(lang, 'dish_ask_photo'));
+      return true;
+    }
+  } else {
+    value = (msg.text || '').trim();
+    if (!value) return true;
+  }
+
+  await db.query(`UPDATE menu_items SET ${def.column} = $1 WHERE id = $2`, [value, id]);
+  state.clearSession(telegramId);
+  console.log(`[INFO] Блюдо #${id}: поле ${def.column} обновлено`);
+
+  await bot.sendMessage(chatId, t(lang, 'edit_saved'));
+  // Показать обновлённую карточку
+  const { rows } = await db.query('SELECT * FROM menu_items WHERE id = $1', [id]);
+  if (rows.length) {
+    const card = dishMgmtCard(lang, rows[0]);
+    await bot.sendMessage(chatId, card.text, card.opts);
+  }
+  return true;
 }
 
 // ==================== Пользователи ====================
@@ -452,6 +599,10 @@ module.exports = {
   handleAddDishStep,
   handleDishCategory,
   dishToggle,
+  showEditFields,
+  startEditField,
+  handleEditCategory,
+  handleEditDishStep,
   startUserSearch,
   handleUserSearchStep,
   showRolePicker,

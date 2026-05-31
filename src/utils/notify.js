@@ -89,9 +89,10 @@ async function notifyCookGroup(bot, order) {
         ]],
       },
     });
-    console.log(`[ORDER] Заказ #${order.id} отправлен поварам`);
+    console.log(`[ORDER] Заказ #${order.id} отправлен поварам (group ${groupId})`);
   } catch (err) {
-    console.error('[ERROR] notifyCookGroup:', err.message);
+    const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+    console.error(`[ERROR] notifyCookGroup (group ${groupId}):`, body);
   }
 }
 
@@ -125,9 +126,10 @@ async function notifyCourierGroup(bot, order) {
         ]],
       },
     });
-    console.log(`[ORDER] Заказ #${order.id} отправлен курьерам`);
+    console.log(`[ORDER] Заказ #${order.id} отправлен курьерам (group ${groupId})`);
   } catch (err) {
-    console.error('[ERROR] notifyCourierGroup:', err.message);
+    const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+    console.error(`[ERROR] notifyCourierGroup (group ${groupId}):`, body);
   }
 }
 

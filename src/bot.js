@@ -74,6 +74,7 @@ bot.on('message', async (msg) => {
     if (await start.handleRegistrationStep(bot, msg, order)) return;
     if (await order.handleCheckoutStep(bot, msg)) return;
     if (await admin.handleAddDishStep(bot, msg)) return;
+    if (await admin.handleEditDishStep(bot, msg)) return;
     if (await admin.handleUserSearchStep(bot, msg)) return;
     if (await admin.handleDepositStep(bot, msg)) return;
 
@@ -264,12 +265,20 @@ bot.on('callback_query', async (query) => {
           if (parts[2] === 'add') {
             await bot.answerCallbackQuery(query.id);
             await admin.startAddDish(bot, chatId, telegramId, lang);
+          } else if (parts[2] === 'edit') {
+            await admin.showEditFields(bot, query, lang);
           } else {
             await admin.dishToggle(bot, query, lang);
           }
           break;
         case 'dishcat':
           await admin.handleDishCategory(bot, query);
+          break;
+        case 'editf':
+          await admin.startEditField(bot, query, lang);
+          break;
+        case 'editcat':
+          await admin.handleEditCategory(bot, query, lang);
           break;
         case 'role':
           await admin.showRolePicker(bot, query, lang);
