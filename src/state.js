@@ -17,13 +17,23 @@ const sessions = new Map();
  */
 const processedCallbacks = new Map(); // id -> timestamp
 
+/**
+ * Нормализация ключа. PostgreSQL возвращает BIGINT (telegram_id) как строку,
+ * а Telegram (msg.from.id) — как число. Приводим всё к строке, чтобы
+ * один и тот же пользователь всегда указывал на одну запись в Map.
+ */
+function key(telegramId) {
+  return String(telegramId);
+}
+
 // ---------- Корзина ----------
 
 function getCart(telegramId) {
-  if (!carts.has(telegramId)) {
-    carts.set(telegramId, { items: new Map(), comment: null, payFromBalance: false });
+  const k = key(telegramId);
+  if (!carts.has(k)) {
+    carts.set(k, { items: new Map(), comment: null, payFromBalance: false });
   }
-  return carts.get(telegramId);
+  return carts.get(k);
 }
 
 function addToCart(telegramId, item) {
@@ -50,26 +60,27 @@ function cartIsEmpty(cart) {
 }
 
 function clearCart(telegramId) {
-  carts.delete(telegramId);
+  carts.delete(key(telegramId));
 }
 
 // ---------- Сессии (диалоги) ----------
 
 function getSession(telegramId) {
-  return sessions.get(telegramId) || null;
+  return sessions.get(key(telegramId)) || null;
 }
 
 function setSession(telegramId, flow, step, data = {}) {
-  sessions.set(telegramId, { flow, step, data });
+  sessions.set(key(telegramId), { flow, step, data });
 }
 
 function updateSession(telegramId, patch) {
-  const s = sessions.get(telegramId);
-  if (s) sessions.set(telegramId, { ...s, ...patch });
+  const k = key(telegramId);
+  const s = sessions.get(k);
+  if (s) sessions.set(k, { ...s, ...patch });
 }
 
 function clearSession(telegramId) {
-  sessions.delete(telegramId);
+  sessions.delete(key(telegramId));
 }
 
 // ---------- Антидубль callback ----------
