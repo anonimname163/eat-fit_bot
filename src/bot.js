@@ -161,6 +161,17 @@ bot.on('callback_query', async (query) => {
     const actor = await getClient(telegramId);
     const lang = (actor && actor.language) || 'ru';
 
+    // --- Степпер количества под блюдом ---
+    if (domain === 'qty') {
+      const client = await getClient(telegramId);
+      if (!isRegistered(client)) {
+        await bot.answerCallbackQuery(query.id, { text: t(lang, 'not_registered') });
+        return;
+      }
+      await order.handleQty(bot, query, client);
+      return;
+    }
+
     // --- Клиентские: корзина / заказ ---
     if (domain === 'cart') {
       const client = await getClient(telegramId);

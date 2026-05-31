@@ -2,6 +2,8 @@
 const db = require('../db');
 const { t, categoryName, dishName, dishDesc, formatMoney, esc } = require('../i18n');
 const { dishDeepLink } = require('../utils/deeplink');
+const state = require('../state');
+const kb = require('../keyboards');
 
 /**
  * Если Telegram отверг фото как «неверный идентификатор/URL» — это битые
@@ -75,12 +77,11 @@ async function showMenu(bot, chatId, client) {
       if (desc) text += `${esc(desc)}\n`;
       text += `💵 ${esc(price)}`;
 
+      const qty = state.getQuantity(client.telegram_id, item.id);
       const opts = {
         parse_mode: 'HTML',
         reply_markup: {
-          inline_keyboard: [[
-            { text: t(lang, 'btn_add_to_cart'), callback_data: `cart:add:${item.id}` },
-          ]],
+          inline_keyboard: [kb.stepperRow(lang, item.id, qty)],
         },
       };
 

@@ -47,6 +47,33 @@ function addToCart(telegramId, item) {
   return cart;
 }
 
+/** Текущее количество блюда в корзине (0, если нет). */
+function getQuantity(telegramId, itemId) {
+  const cart = getCart(telegramId);
+  const e = cart.items.get(itemId);
+  return e ? e.quantity : 0;
+}
+
+/** Увеличить количество блюда на 1 (добавить, если не было). */
+function incQuantity(telegramId, item) {
+  const cart = getCart(telegramId);
+  const e = cart.items.get(item.id);
+  if (e) e.quantity += 1;
+  else cart.items.set(item.id, { item, quantity: 1 });
+  return cart;
+}
+
+/** Уменьшить количество блюда на 1 (удалить из корзины при 0). */
+function decQuantity(telegramId, itemId) {
+  const cart = getCart(telegramId);
+  const e = cart.items.get(itemId);
+  if (e) {
+    e.quantity -= 1;
+    if (e.quantity <= 0) cart.items.delete(itemId);
+  }
+  return cart;
+}
+
 function cartTotal(cart) {
   let total = 0;
   for (const { item, quantity } of cart.items.values()) {
@@ -103,6 +130,9 @@ function isDuplicateCallback(callbackId) {
 module.exports = {
   getCart,
   addToCart,
+  getQuantity,
+  incQuantity,
+  decQuantity,
   cartTotal,
   cartIsEmpty,
   clearCart,

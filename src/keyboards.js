@@ -70,10 +70,26 @@ function addMoreKeyboard(lang) {
   };
 }
 
+/**
+ * Ряд-степпер под блюдом: ➖ / количество / ➕.
+ * Средняя кнопка — индикатор (ничего не делает).
+ * @param {string} lang
+ * @param {number} itemId
+ * @param {number} qty текущее количество в корзине
+ */
+function stepperRow(lang, itemId, qty) {
+  return [
+    { text: '➖', callback_data: `qty:dec:${itemId}` },
+    { text: `${qty} ${t(lang, 'pcs')}`, callback_data: 'qty:noop' },
+    { text: '➕', callback_data: `qty:inc:${itemId}` },
+  ];
+}
+
 module.exports = {
   mainMenuKeyboard,
   languageKeyboard,
   shareContactKeyboard,
   dishCardKeyboard,
   addMoreKeyboard,
+  stepperRow,
 };

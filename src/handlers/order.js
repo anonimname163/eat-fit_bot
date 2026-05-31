@@ -25,7 +25,11 @@ async function openDishCard(bot, chatId, client, itemId) {
   if (desc) text += `${esc(desc)}\n`;
   text += `💵 ${esc(price)}`;
 
-  const opts = { parse_mode: 'HTML', ...kb.dishCardKeyboard(lang, item.id) };
+  const qty = state.getQuantity(client.telegram_id, item.id);
+  const opts = {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: [kb.stepperRow(lang, item.id, qty)] },
+  };
 
   if (item.photo_url) {
     try {
@@ -158,17 +162,57 @@ async function showCategory(bot, query, client) {
     const name = dishName(lang, item);
     const price = `${formatMoney(item.price)} ${t(lang, 'currency')}`;
     const text = `🍽 <b>${esc(name)}</b> — ${esc(price)}`;
+    const qty = state.getQuantity(client.telegram_id, item.id);
     await bot.sendMessage(chatId, text, {
       parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [[
-          { text: t(lang, 'btn_add_to_cart'), callback_data: `cart:add:${item.id}` },
-        ]],
-      },
+      reply_markup: { inline_keyboard: [kb.stepperRow(lang, item.id, qty)] },
     });
   }
   // Свежая панель корзины внизу, чтобы кнопки оформления были под рукой
   await sendCartPanel(bot, chatId, client);
+}
+
+/**
+ * Обработка степпера количества (callback qty:inc|dec|noop:<id>).
+ * Меняет количество в корзине, обновляет кнопку под блюдом и панель корзины.
+ */
+async function handleQty(bot, query, client) {
+  const lang = client.language || 'ru';
+  const chatId = query.message.chat.id;
+  const parts = query.data.split(':'); // qty:inc|dec|noop:<id>
+  const action = parts[1];
+
+  if (action === 'noop') {
+    await bot.answerCallbackQuery(query.id);
+    return;
+  }
+
+  const itemId = Number(parts[2]);
+
+  if (action === 'inc') {
+    const item = await menu.getActiveItem(itemId);
+    if (!item) {
+      await bot.answerCallbackQuery(query.id, { text: t(lang, 'dish_not_found') });
+      return;
+    }
+    state.incQuantity(client.telegram_id, item);
+  } else if (action === 'dec') {
+    state.decQuantity(client.telegram_id, itemId);
+  }
+
+  const qty = state.getQuantity(client.telegram_id, itemId);
+  await bot.answerCallbackQuery(query.id);
+
+  // Обновить кнопку-степпер под этим блюдом на месте
+  try {
+    await bot.editMessageReplyMarkup(
+      { inline_keyboard: [kb.stepperRow(lang, itemId, qty)] },
+      { chat_id: chatId, message_id: query.message.message_id }
+    );
+  } catch (_) { /* игнор: разметка не изменилась */ }
+
+  // Обновить «живую» панель корзины
+  await updateCartPanel(bot, chatId, client);
 }
 
 /**
@@ -414,6 +458,7 @@ module.exports = {
   openDishCard,
   startOrder,
   addToCart,
+  handleQty,
   showCategory,
   checkout,
   handleCheckoutStep,
