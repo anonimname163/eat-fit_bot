@@ -45,6 +45,7 @@ async function showAdminPanel(bot, chatId, client) {
         [{ text: t(lang, 'admin_deposits'), callback_data: 'admin:deposits' }],
         [{ text: t(lang, 'admin_orders'), callback_data: 'admin:orders' }],
         [{ text: t(lang, 'admin_gen_post'), callback_data: 'admin:genpost' }],
+        [{ text: t(lang, 'admin_report'), callback_data: 'admin:report' }],
         [{ text: t(lang, 'admin_contacts'), callback_data: 'admin:contacts' }],
       ],
     },

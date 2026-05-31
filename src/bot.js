@@ -15,6 +15,7 @@ const profile = require('./handlers/profile');
 const cook = require('./handlers/cook');
 const courier = require('./handlers/courier');
 const admin = require('./handlers/admin');
+const report = require('./report');
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -296,6 +297,10 @@ bot.on('callback_query', async (query) => {
           await bot.answerCallbackQuery(query.id);
           await admin.showGenPostMenu(bot, chatId, lang);
           break;
+        case 'report':
+          await bot.answerCallbackQuery(query.id);
+          await report.sendDailyReport(bot, chatId);
+          break;
         case 'post':
           await admin.generatePost(bot, query, lang);
           break;
@@ -365,6 +370,7 @@ process.on('unhandledRejection', (reason) => {
     process.exit(1);
   }
   await setupCommands();
+  report.startDailyReportScheduler(bot);
   console.log('[INFO] Eat&fit bot запущен (polling)');
 })();
 

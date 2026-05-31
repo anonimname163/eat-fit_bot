@@ -8,7 +8,10 @@
       "Bash(node --check src/handlers/order.js)",
       "Bash(node -e ' *)",
       "Bash(node --check src/handlers/cook.js)",
-      "Bash(node --check src/handlers/courier.js)"
+      "Bash(node --check src/handlers/courier.js)",
+      "Bash(node --check src/report.js)",
+      "Bash(node --check src/bot.js)",
+      "Bash(node --check src/handlers/admin.js)"
     ]
   }
 }

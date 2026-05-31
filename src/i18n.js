@@ -303,6 +303,7 @@ const dict = {
   admin_deposits: { ru: '💰 Депозиты', uz: '💰 Depozitlar' },
   admin_orders: { ru: '📊 Заказы', uz: '📊 Buyurtmalar' },
   admin_gen_post: { ru: '📢 Генерировать пост', uz: '📢 Post yaratish' },
+  admin_report: { ru: '📈 Итоги дня', uz: '📈 Kun yakunlari' },
 
   btn_add_dish: { ru: '➕ Добавить блюдо', uz: '➕ Taom qo‘shish' },
   btn_edit: { ru: '✏️ Редактировать', uz: '✏️ Tahrirlash' },
