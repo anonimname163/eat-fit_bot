@@ -1,0 +1,25 @@
+{
+  "name": "eatfit-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Eat&fit food delivery service (RU/UZ)",
+  "main": "src/bot.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/bot.js",
+    "dev": "node src/bot.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "food-delivery",
+    "eatfit"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "pg": "^8.12.0"
+  }
+}
