@@ -2,6 +2,7 @@
 require('dotenv').config();
 
 const TelegramBot = require('node-telegram-bot-api');
+const db = require('./db');
 const { t } = require('./i18n');
 const state = require('./state');
 const { getClient, isRegistered } = require('./middleware/registration');
@@ -303,6 +304,12 @@ process.on('unhandledRejection', (reason) => {
 
 // ---------- Запуск ----------
 (async () => {
+  try {
+    await db.migrate();
+  } catch (err) {
+    console.error('[ERROR] Не удалось применить схему БД:', err.message);
+    process.exit(1);
+  }
   await setupCommands();
   console.log('[INFO] Eat&fit bot запущен (polling)');
 })();
