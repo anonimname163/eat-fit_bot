@@ -60,6 +60,9 @@ async function takeDelivery(bot, query, actor) {
   await bot.answerCallbackQuery(query.id, { text: t(lang, 'delivery_taken') });
   console.log(`[ORDER] Заказ #${orderId} взят курьером ${query.from.id}`);
 
+  // Теперь курьер реально выехал — уведомляем клиента «Курьер выехал! 🚗»
+  await notify.notifyClientStatus(bot, rows[0], 'delivering');
+
   try {
     await bot.editMessageReplyMarkup(
       { inline_keyboard: [[{ text: t(lang, 'btn_delivered'), callback_data: `courier:done:${orderId}` }]] },

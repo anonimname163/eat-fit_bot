@@ -93,7 +93,7 @@ async function markReady(bot, query, actor) {
   await bot.answerCallbackQuery(query.id, { text: t(lang, 'marked_ready') });
   console.log(`[ORDER] Заказ #${orderId} готов, передан курьерам`);
 
-  await notify.notifyClientStatus(bot, order, 'delivering');
+  // Клиента уведомляем «Курьер выехал» только когда курьер реально возьмёт заказ
   await notify.notifyCourierGroup(bot, order);
 
   try {
