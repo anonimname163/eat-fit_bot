@@ -34,6 +34,7 @@ async function openDishCard(bot, chatId, client, itemId) {
     } catch (err) {
       const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
       console.error('[ERROR] sendPhoto карточки (item', item.id, '):', body);
+      await menu.clearInvalidPhoto(item.id, body);
     }
   }
   await bot.sendMessage(chatId, text, opts);

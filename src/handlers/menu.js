@@ -3,6 +3,23 @@ const db = require('../db');
 const { t, categoryName, dishName, dishDesc, formatMoney, esc } = require('../i18n');
 const { dishDeepLink } = require('../utils/deeplink');
 
+/**
+ * Если Telegram отверг фото как «неверный идентификатор/URL» — это битые
+ * данные (мусорный file_id/URL). Сбрасываем photo_url, чтобы ошибка не
+ * повторялась и блюдо просто показывалось текстом.
+ * @param {number} itemId
+ * @param {string} errBody текст ошибки Telegram
+ */
+async function clearInvalidPhoto(itemId, errBody) {
+  const s = String(errBody || '');
+  if (/wrong file identifier|HTTP URL|failed to get HTTP URL|PHOTO_INVALID|wrong remote file|file_id/i.test(s)) {
+    try {
+      await db.query('UPDATE menu_items SET photo_url = NULL WHERE id = $1', [itemId]);
+      console.log(`[INFO] Сброшен невалидный photo_url у блюда #${itemId}`);
+    } catch (_) { /* игнор */ }
+  }
+}
+
 /** Активные блюда категории. */
 async function activeItemsByCategory(category) {
   const { rows } = await db.query(
@@ -74,6 +91,7 @@ async function showMenu(bot, chatId, client) {
         } catch (err) {
           const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
           console.error('[ERROR] sendPhoto в меню (item', item.id, '):', body);
+          await clearInvalidPhoto(item.id, body);
         }
       }
       await bot.sendMessage(chatId, text, opts);
@@ -87,4 +105,5 @@ module.exports = {
   getActiveItem,
   showMenu,
   dishDeepLink,
+  clearInvalidPhoto,
 };
