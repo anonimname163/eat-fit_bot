@@ -198,6 +198,7 @@ bot.on('callback_query', async (query) => {
       if (sub === 'pay') await order.choosePayment(bot, query, client);
       else if (sub === 'confirm') await order.confirmOrder(bot, query, client);
       else if (sub === 'cancel') await order.cancelOrder(bot, query, client);
+      else if (sub === 'nocomment') await order.skipComment(bot, query, client);
       return;
     }
 

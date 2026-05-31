@@ -184,9 +184,10 @@ const dict = {
     uz: '❌ Balansda mablag‘ yetarli emas. Yetkazib berishda to‘lashni tanlang.',
   },
   ask_comment: {
-    ru: 'Добавьте комментарий к заказу (или напишите «-» чтобы пропустить):',
-    uz: 'Buyurtmaga izoh qoldiring (yoki o‘tkazib yuborish uchun «-» yozing):',
+    ru: 'Добавьте комментарий к заказу или нажмите кнопку ниже:',
+    uz: 'Buyurtmaga izoh qoldiring yoki pastdagi tugmani bosing:',
   },
+  btn_no_comment: { ru: '➡️ Без комментария', uz: '➡️ Izohsiz' },
 
   // ---- Мои заказы ----
   my_orders_title: {

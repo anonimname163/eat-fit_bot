@@ -281,9 +281,36 @@ async function checkout(bot, query, client) {
     cart.panelMessageId = null;
   }
 
-  // Запросим комментарий, затем покажем подтверждение
+  // Запросим комментарий (можно пропустить кнопкой), затем покажем подтверждение
   state.setSession(client.telegram_id, 'checkout', 'comment', {});
-  await bot.sendMessage(chatId, t(lang, 'ask_comment'));
+  await bot.sendMessage(chatId, t(lang, 'ask_comment'), {
+    reply_markup: {
+      inline_keyboard: [[{ text: t(lang, 'btn_no_comment'), callback_data: 'order:nocomment' }]],
+    },
+  });
+}
+
+/**
+ * Показать подтверждение заказа с выбором способа оплаты.
+ */
+async function proceedToPayment(bot, chatId, client) {
+  const lang = client.language || 'ru';
+  const cart = state.getCart(client.telegram_id);
+  const total = state.cartTotal(cart);
+  const text = renderCart(lang, cart, client);
+
+  const buttons = [];
+  if (Number(client.balance) >= total) {
+    buttons.push([{ text: t(lang, 'btn_pay_balance'), callback_data: 'order:pay:balance' }]);
+  }
+  buttons.push([{ text: t(lang, 'btn_pay_cash'), callback_data: 'order:pay:cash' }]);
+  buttons.push([{ text: t(lang, 'btn_cancel'), callback_data: 'order:cancel' }]);
+
+  console.log(`[ORDER] Клиент ${client.telegram_id} перешёл к оплате (позиций: ${cart.items.size}, сумма: ${total})`);
+  await bot.sendMessage(chatId, text, {
+    parse_mode: 'HTML',
+    reply_markup: { inline_keyboard: buttons },
+  });
 }
 
 /**
@@ -309,25 +336,32 @@ async function handleCheckoutStep(bot, msg) {
     const comment = (msg.text || '').trim();
     cart.comment = comment === '-' ? null : comment;
     state.clearSession(telegramId);
-
-    // Показать подтверждение с выбором оплаты
-    const total = state.cartTotal(cart);
-    const text = renderCart(lang, cart, client);
-    const buttons = [];
-    if (Number(client.balance) >= total) {
-      buttons.push([{ text: t(lang, 'btn_pay_balance'), callback_data: 'order:pay:balance' }]);
-    }
-    buttons.push([{ text: t(lang, 'btn_pay_cash'), callback_data: 'order:pay:cash' }]);
-    buttons.push([{ text: t(lang, 'btn_cancel'), callback_data: 'order:cancel' }]);
-
-    console.log(`[ORDER] Клиент ${telegramId} перешёл к оплате (позиций: ${cart.items.size}, сумма: ${total})`);
-    await bot.sendMessage(chatId, text, {
-      parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: buttons },
-    });
+    await proceedToPayment(bot, chatId, client);
     return true;
   }
   return false;
+}
+
+/**
+ * Пропустить комментарий (callback order:nocomment) → сразу к оплате.
+ */
+async function skipComment(bot, query, client) {
+  const chatId = query.message.chat.id;
+  const lang = client.language || 'ru';
+  const cart = state.getCart(client.telegram_id);
+
+  await bot.answerCallbackQuery(query.id);
+  if (state.cartIsEmpty(cart)) {
+    await bot.sendMessage(chatId, t(lang, 'cart_empty'));
+    return;
+  }
+  cart.comment = null;
+  state.clearSession(client.telegram_id);
+  // Убрать кнопку «Без комментария» с предыдущего сообщения
+  try {
+    await bot.editMessageReplyMarkup({ inline_keyboard: [] }, { chat_id: chatId, message_id: query.message.message_id });
+  } catch (_) { /* игнор */ }
+  await proceedToPayment(bot, chatId, client);
 }
 
 /**
@@ -490,6 +524,7 @@ module.exports = {
   showCategory,
   checkout,
   handleCheckoutStep,
+  skipComment,
   choosePayment,
   confirmOrder,
   cancelOrder,
