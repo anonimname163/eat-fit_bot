@@ -87,18 +87,16 @@ async function handleRegistrationStep(bot, msg, order) {
       await bot.sendMessage(chatId, t(lang, 'choose_language'), kb.languageKeyboard());
       return true;
 
-    case 'first_name': {
-      const firstName = (msg.text || '').trim();
-      if (!firstName) return true;
-      await db.query('UPDATE clients SET first_name = $1 WHERE telegram_id = $2', [firstName, telegramId]);
-      state.updateSession(telegramId, { step: 'last_name' });
-      await bot.sendMessage(chatId, t(lang, 'ask_last_name'));
-      return true;
-    }
-
-    case 'last_name': {
-      const lastName = (msg.text || '').trim();
-      await db.query('UPDATE clients SET last_name = $1 WHERE telegram_id = $2', [lastName, telegramId]);
+    case 'full_name': {
+      // Имя и фамилия одной строкой: первое слово — имя, остальное — фамилия
+      const fullName = (msg.text || '').trim().replace(/\s+/g, ' ');
+      if (!fullName) return true;
+      const [firstName, ...rest] = fullName.split(' ');
+      const lastName = rest.join(' ') || null;
+      await db.query(
+        'UPDATE clients SET first_name = $1, last_name = $2 WHERE telegram_id = $3',
+        [firstName, lastName, telegramId]
+      );
       state.updateSession(telegramId, { step: 'phone' });
       await bot.sendMessage(chatId, t(lang, 'ask_phone'), kb.shareContactKeyboard(lang));
       return true;
@@ -158,9 +156,9 @@ async function handleLanguageChoice(bot, query) {
 
   const session = state.getSession(telegramId);
   if (session && session.flow === 'register' && session.step === 'language') {
-    state.updateSession(telegramId, { step: 'first_name' });
+    state.updateSession(telegramId, { step: 'full_name' });
     await bot.sendMessage(chatId, t(lang, 'language_set'));
-    await bot.sendMessage(chatId, t(lang, 'ask_first_name'));
+    await bot.sendMessage(chatId, t(lang, 'ask_full_name'));
   } else {
     // Смена языка вне регистрации
     const client = await getClient(telegramId);

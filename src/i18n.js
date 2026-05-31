@@ -19,6 +19,10 @@ const dict = {
     ru: 'Введите вашу фамилию:',
     uz: 'Familiyangizni kiriting:',
   },
+  ask_full_name: {
+    ru: 'Введите имя и фамилию (например: Иван Иванов):',
+    uz: 'Ism va familiyangizni kiriting (masalan: Ali Valiyev):',
+  },
   ask_phone: {
     ru: 'Отправьте номер телефона кнопкой ниже или введите вручную:',
     uz: 'Telefon raqamingizni pastdagi tugma orqali yuboring yoki qo‘lda kiriting:',
