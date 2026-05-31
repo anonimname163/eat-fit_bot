@@ -371,8 +371,14 @@ const dict = {
   gen_post_all: { ru: '📢 Все активные блюда', uz: '📢 Barcha faol taomlar' },
   post_order_btn: { ru: '👉 Заказать', uz: '👉 Buyurtma berish' },
   post_for_channel: {
-    ru: '📢 Готовый пост — перешлите его в канал (кнопка сохранится):',
-    uz: '📢 Tayyor post — uni kanalga yo‘naltiring (tugma saqlanadi):',
+    ru: '📢 Превью поста. Нажмите «Опубликовать в канал» — пост уйдёт без отметки отправителя:',
+    uz: '📢 Post ko‘rinishi. «Kanalga joylash» tugmasini bosing — post yuboruvchi belgisi’siz chiqadi:',
+  },
+  btn_publish_channel: { ru: '📤 Опубликовать в канал', uz: '📤 Kanalga joylash' },
+  published_ok: { ru: 'Опубликовано в канал ✅', uz: 'Kanalga joylandi ✅' },
+  channel_not_set: {
+    ru: '⚠️ CHANNEL_ID не задан. Укажите ID канала в настройках и добавьте бота админом канала.',
+    uz: '⚠️ CHANNEL_ID ko‘rsatilmagan. Kanal ID’sini sozlamalarga qo‘shing va botni kanalga admin qiling.',
   },
 
   // ---- Ошибки / доступ ----

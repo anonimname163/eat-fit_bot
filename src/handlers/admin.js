@@ -701,13 +701,16 @@ async function showGenPostMenu(bot, chatId, lang) {
 }
 
 /**
- * Отправить готовый пост для канала: фото + текст + inline-кнопка «Заказать»
- * со ссылкой-deeplink. Кнопка сохраняется при пересылке поста в канал.
+ * Показать админу превью поста: фото + текст + кнопка «Заказать» (url) и
+ * кнопка «Опубликовать в канал» (бот сам отправит пост — без отметки отправителя).
  */
 async function sendChannelPost(bot, chatId, item, lang) {
   const text = buildChannelPost(item, lang);
   const keyboard = {
-    inline_keyboard: [[{ text: t(lang, 'post_order_btn'), url: dishDeepLink(item.id) }]],
+    inline_keyboard: [
+      [{ text: t(lang, 'post_order_btn'), url: dishDeepLink(item.id) }],
+      [{ text: t(lang, 'btn_publish_channel'), callback_data: `admin:publish:${item.id}` }],
+    ],
   };
   if (item.photo_url) {
     try {
@@ -721,6 +724,59 @@ async function sendChannelPost(bot, chatId, item, lang) {
     }
   }
   await bot.sendMessage(chatId, text, { reply_markup: keyboard });
+}
+
+/**
+ * Опубликовать пост напрямую в канал (CHANNEL_ID) — это обычный пост канала,
+ * без «Переслано от …». Бот должен быть админом канала.
+ * @returns {Promise<{ok:boolean, reason?:string}>}
+ */
+async function publishDishToChannel(bot, item, lang) {
+  const channelId = process.env.CHANNEL_ID;
+  if (!channelId) return { ok: false, reason: 'no_channel' };
+
+  const text = buildChannelPost(item, lang);
+  const keyboard = {
+    inline_keyboard: [[{ text: t(lang, 'post_order_btn'), url: dishDeepLink(item.id) }]],
+  };
+  try {
+    if (item.photo_url) {
+      try {
+        await bot.sendPhoto(channelId, item.photo_url, { caption: text, reply_markup: keyboard });
+        return { ok: true };
+      } catch (err) {
+        const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+        console.error('[ERROR] publish photo (item', item.id, '):', body);
+        await db.query('UPDATE menu_items SET photo_url = NULL WHERE id = $1', [item.id]);
+      }
+    }
+    await bot.sendMessage(channelId, text, { reply_markup: keyboard });
+    return { ok: true };
+  } catch (err) {
+    const body = err.response && err.response.body ? JSON.stringify(err.response.body) : err.message;
+    console.error(`[ERROR] publishDishToChannel (channel ${channelId}):`, body);
+    return { ok: false, reason: 'send_failed' };
+  }
+}
+
+/** Обработчик кнопки «Опубликовать в канал» (callback admin:publish:<id>). */
+async function publishPost(bot, query, lang) {
+  const id = Number(query.data.split(':')[2]);
+  const { rows } = await db.query('SELECT * FROM menu_items WHERE id = $1', [id]);
+  if (!rows.length) {
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'dish_not_found') });
+    return;
+  }
+  const res = await publishDishToChannel(bot, rows[0], lang);
+  if (res.ok) {
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'published_ok') });
+    console.log(`[INFO] Блюдо #${id} опубликовано в канал`);
+  } else if (res.reason === 'no_channel') {
+    await bot.answerCallbackQuery(query.id);
+    await bot.sendMessage(query.message.chat.id, t(lang, 'channel_not_set'));
+  } else {
+    await bot.answerCallbackQuery(query.id, { text: t(lang, 'error_generic') });
+  }
 }
 
 async function generatePost(bot, query, lang) {
@@ -768,6 +824,7 @@ module.exports = {
   cancelOrderByAdmin,
   showGenPostMenu,
   generatePost,
+  publishPost,
   showContacts,
   startEditContact,
   handleContactStep,

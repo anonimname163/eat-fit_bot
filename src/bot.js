@@ -310,6 +310,9 @@ bot.on('callback_query', async (query) => {
         case 'post':
           await admin.generatePost(bot, query, lang);
           break;
+        case 'publish':
+          await admin.publishPost(bot, query, lang);
+          break;
         case 'contacts':
           await bot.answerCallbackQuery(query.id);
           await admin.showContacts(bot, chatId, lang);

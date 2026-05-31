@@ -11,7 +11,8 @@
       "Bash(node --check src/handlers/courier.js)",
       "Bash(node --check src/report.js)",
       "Bash(node --check src/bot.js)",
-      "Bash(node --check src/handlers/admin.js)"
+      "Bash(node --check src/handlers/admin.js)",
+      "Bash(node --check src/i18n.js)"
     ]
   }
 }
