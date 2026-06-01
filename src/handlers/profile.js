@@ -57,6 +57,37 @@ async function showTopup(bot, query, client) {
   await bot.sendMessage(query.message.chat.id, lines.join('\n'), { parse_mode: 'HTML' });
 }
 
+/**
+ * Превратить значение поддержки в URL для inline-кнопки.
+ * Ссылку http(s) — как есть; @username и t.me — в https://t.me/...; иначе null.
+ */
+function supportUrl(value) {
+  const v = (value || '').trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  if (/^@\w{3,}$/.test(v)) return `https://t.me/${v.slice(1)}`;
+  if (/^t\.me\//i.test(v)) return `https://${v}`;
+  return null;
+}
+
+/** Показать пользователю контакт поддержки (reply-кнопка «Поддержка»). */
+async function showSupport(bot, chatId, client) {
+  const lang = client.language || 'ru';
+  const value = await settings.getSetting(settings.KEYS.SUPPORT_CONTACT);
+
+  if (!value) {
+    await bot.sendMessage(chatId, t(lang, 'support_not_set'));
+    return;
+  }
+
+  const url = supportUrl(value);
+  const lines = [`<b>${esc(t(lang, 'support_title'))}</b>`, '', esc(t(lang, 'support_text')), '', esc(value)];
+  const opts = { parse_mode: 'HTML' };
+  if (url) {
+    opts.reply_markup = { inline_keyboard: [[{ text: t(lang, 'support_contact_btn'), url }]] };
+  }
+  await bot.sendMessage(chatId, lines.join('\n'), opts);
+}
+
 /** Меню выбора, какое поле профиля редактировать (callback profile:edit). */
 async function showEditProfile(bot, query, client) {
   const lang = client.language || 'ru';
@@ -151,6 +182,7 @@ module.exports = {
   showProfile,
   showBalance,
   showTopup,
+  showSupport,
   showEditProfile,
   startProfileField,
   handleProfileEditStep,

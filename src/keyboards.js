@@ -6,7 +6,7 @@ function mainMenuKeyboard(lang, role, isAdmin) {
   const rows = [
     [t(lang, 'btn_make_order')],
     [t(lang, 'btn_my_orders'), t(lang, 'btn_profile')],
-    [t(lang, 'btn_balance')],
+    [t(lang, 'btn_balance'), t(lang, 'btn_support')],
   ];
   if (role === 'cook') rows.push([t(lang, 'btn_cook_mode')]);
   if (role === 'courier') rows.push([t(lang, 'btn_courier_mode')]);

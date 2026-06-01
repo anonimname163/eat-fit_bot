@@ -122,6 +122,8 @@ bot.on('message', async (msg) => {
       await profile.showBalance(bot, chatId, client);
     } else if (text === t('ru', 'btn_my_orders') || text === t('uz', 'btn_my_orders')) {
       await order.showMyOrders(bot, chatId, client);
+    } else if (text === t('ru', 'btn_support') || text === t('uz', 'btn_support')) {
+      await profile.showSupport(bot, chatId, client);
     } else if (text === t('ru', 'btn_cook_mode') || text === t('uz', 'btn_cook_mode')) {
       if (hasRole(client, telegramId, ['cook', 'admin'])) await cook.showCookPanel(bot, chatId, client);
       else await bot.sendMessage(chatId, t(lang, 'access_denied'));
@@ -316,6 +318,10 @@ bot.on('callback_query', async (query) => {
         case 'contacts':
           await bot.answerCallbackQuery(query.id);
           await admin.showContacts(bot, chatId, lang);
+          break;
+        case 'support':
+          await bot.answerCallbackQuery(query.id);
+          await admin.showSupportSetting(bot, chatId, lang);
           break;
         case 'contact':
           await admin.startEditContact(bot, query, lang);

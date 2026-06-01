@@ -77,6 +77,10 @@ const dict = {
     ru: '🔧 Админ-панель',
     uz: '🔧 Admin panel',
   },
+  btn_support: {
+    ru: '🆘 Поддержка',
+    uz: '🆘 Yordam',
+  },
 
   // ---- Профиль / баланс ----
   profile_title: {
@@ -119,6 +123,29 @@ const dict = {
   contact_ask_phone: { ru: 'Введите номер телефона для пополнения:', uz: 'To‘ldirish uchun telefon raqamini kiriting:' },
   contact_saved: { ru: 'Контакт сохранён ✅', uz: 'Kontakt saqlandi ✅' },
   not_set_dash: { ru: 'не указан', uz: 'ko‘rsatilmagan' },
+
+  // ---- Поддержка (для клиента) ----
+  support_title: { ru: '🆘 Поддержка', uz: '🆘 Yordam' },
+  support_text: {
+    ru: 'Если у вас есть вопрос или проблема — свяжитесь с нами:',
+    uz: 'Savol yoki muammo bo‘lsa — biz bilan bog‘laning:',
+  },
+  support_contact_btn: { ru: '✍️ Написать в поддержку', uz: '✍️ Yordamga yozish' },
+  support_not_set: {
+    ru: 'Контакты поддержки пока не указаны. Попробуйте позже.',
+    uz: 'Yordam kontaktlari hali ko‘rsatilmagan. Keyinroq urinib ko‘ring.',
+  },
+
+  // ---- Поддержка в админке ----
+  admin_support: { ru: '🆘 Поддержка', uz: '🆘 Yordam' },
+  support_settings_title: { ru: 'Кнопка «Поддержка»', uz: '«Yordam» tugmasi' },
+  support_current: { ru: 'Сейчас ведёт на', uz: 'Hozir yo‘naltiradi' },
+  support_edit_btn: { ru: '✏️ Изменить', uz: '✏️ O‘zgartirish' },
+  support_ask: {
+    ru: 'Куда должна вести кнопка «Поддержка»? Введите @username, ссылку https://t.me/... или номер телефона:',
+    uz: '«Yordam» tugmasi qayerga yo‘naltirsin? @username, https://t.me/... havola yoki telefon raqamini kiriting:',
+  },
+  support_saved: { ru: 'Поддержка сохранена ✅', uz: 'Yordam saqlandi ✅' },
 
   // ---- Редактирование профиля ----
   btn_edit_profile: { ru: '✏️ Редактировать профиль', uz: '✏️ Profilni tahrirlash' },

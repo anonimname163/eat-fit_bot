@@ -48,6 +48,7 @@ async function showAdminPanel(bot, chatId, client) {
         [{ text: t(lang, 'admin_gen_post'), callback_data: 'admin:genpost' }],
         [{ text: t(lang, 'admin_report'), callback_data: 'admin:report' }],
         [{ text: t(lang, 'admin_contacts'), callback_data: 'admin:contacts' }],
+        [{ text: t(lang, 'admin_support'), callback_data: 'admin:support' }],
       ],
     },
   });
@@ -74,13 +75,37 @@ async function showContacts(bot, chatId, lang) {
   });
 }
 
-/** Начать редактирование контакта (callback admin:contact:tg|phone). */
+// Поля редактируемых контактов: какой текст спросить и в какой ключ настроек сохранить.
+const CONTACT_FIELDS = {
+  tg: { ask: 'contact_ask_tg', key: settings.KEYS.TOPUP_TELEGRAM },
+  phone: { ask: 'contact_ask_phone', key: settings.KEYS.TOPUP_PHONE },
+  support: { ask: 'support_ask', key: settings.KEYS.SUPPORT_CONTACT },
+};
+
+/** Показать текущее назначение кнопки «Поддержка» + кнопку редактирования. */
+async function showSupportSetting(bot, chatId, lang) {
+  const value = await settings.getSetting(settings.KEYS.SUPPORT_CONTACT);
+  const lines = [
+    `<b>${esc(t(lang, 'support_settings_title'))}</b>`,
+    '',
+    `🆘 ${esc(t(lang, 'support_current'))}: ${esc(value || t(lang, 'not_set_dash'))}`,
+  ];
+  await bot.sendMessage(chatId, lines.join('\n'), {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [[{ text: t(lang, 'support_edit_btn'), callback_data: 'admin:contact:support' }]],
+    },
+  });
+}
+
+/** Начать редактирование контакта (callback admin:contact:tg|phone|support). */
 async function startEditContact(bot, query, lang) {
-  const field = query.data.split(':')[2]; // tg | phone
+  const field = query.data.split(':')[2]; // tg | phone | support
+  const def = CONTACT_FIELDS[field];
   await bot.answerCallbackQuery(query.id);
+  if (!def) return;
   state.setSession(query.from.id, 'edit_contact', field, {});
-  const askKey = field === 'phone' ? 'contact_ask_phone' : 'contact_ask_tg';
-  await bot.sendMessage(query.message.chat.id, t(lang, askKey));
+  await bot.sendMessage(query.message.chat.id, t(lang, def.ask));
 }
 
 /** Шаг ввода значения контакта. Возвращает true если обработано. */
@@ -95,13 +120,18 @@ async function handleContactStep(bot, msg) {
   const value = (msg.text || '').trim();
   if (!value) return true;
 
-  const key = session.step === 'phone' ? settings.KEYS.TOPUP_PHONE : settings.KEYS.TOPUP_TELEGRAM;
-  await settings.setSetting(key, value);
+  const def = CONTACT_FIELDS[session.step] || CONTACT_FIELDS.tg;
+  await settings.setSetting(def.key, value);
   state.clearSession(telegramId);
-  console.log(`[INFO] Контакт пополнения (${session.step}) обновлён админом ${telegramId}`);
+  console.log(`[INFO] Контакт (${session.step}) обновлён админом ${telegramId}`);
 
-  await bot.sendMessage(chatId, t(lang, 'contact_saved'));
-  await showContacts(bot, chatId, lang);
+  if (session.step === 'support') {
+    await bot.sendMessage(chatId, t(lang, 'support_saved'));
+    await showSupportSetting(bot, chatId, lang);
+  } else {
+    await bot.sendMessage(chatId, t(lang, 'contact_saved'));
+    await showContacts(bot, chatId, lang);
+  }
   return true;
 }
 
@@ -826,6 +856,7 @@ module.exports = {
   generatePost,
   publishPost,
   showContacts,
+  showSupportSetting,
   startEditContact,
   handleContactStep,
 };

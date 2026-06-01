@@ -5,6 +5,7 @@ const db = require('./db');
 const KEYS = {
   TOPUP_TELEGRAM: 'topup_telegram',
   TOPUP_PHONE: 'topup_phone',
+  SUPPORT_CONTACT: 'support_contact', // куда ведёт кнопка «Поддержка»
 };
 
 /** Получить значение настройки (или дефолт). */
