@@ -346,7 +346,7 @@
       var parts = name.split(' ');
       btn.disabled = true; btn.textContent = '…';
       api('PUT', '/me', { first_name: parts[0], last_name: parts.slice(1).join(' '), phone: phone, address: addr, language: state.lang })
-        .then(function (me) { state.me = me; haptic('medium'); toast(t('reg_done')); setTab('menu'); })
+        .then(function (me) { state.me = me; updateAdminTab(); haptic('medium'); toast(t('reg_done')); setTab('menu'); })
         .catch(function (e) { toast(e.code === 'invalid_phone' ? t('phone') + ' ✗' : t('err')); btn.disabled = false; btn.textContent = t('reg_save'); });
     };
   }
@@ -586,8 +586,16 @@
 
   // ---------------- Main render ----------------
   function needsRegistration() {
-    // Админам не навязываем клиентскую регистрацию — у них есть своя панель
-    return inTelegram && state.me && !state.me.registered && !state.me.is_admin;
+    return inTelegram && state.me && !state.me.registered;
+  }
+
+  // Вкладка «Админ» — только зарегистрированным администраторам.
+  function updateAdminTab() {
+    var at = document.getElementById('adminTab');
+    if (!at) return;
+    var show = !!(state.me && state.me.is_admin && state.me.registered);
+    at.hidden = !show;
+    if (!show && state.tab === 'admin') setTab('menu');
   }
 
   function render() {
@@ -744,8 +752,7 @@
       jobs.push(api('GET', '/me').then(function (me) {
         state.me = me;
         if (me.language) state.lang = me.language;
-        // Вкладка «Админ» — только для администраторов
-        if (me.is_admin) { var at = document.getElementById('adminTab'); if (at) at.hidden = false; }
+        updateAdminTab();
       }).catch(function () {}));
     }
     Promise.all(jobs).then(function () {

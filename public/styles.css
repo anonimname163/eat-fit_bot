@@ -31,6 +31,26 @@
   --shadow-sm: 0 2px 8px rgba(16, 40, 24, .06);
   --shadow-md: 0 8px 24px rgba(16, 40, 24, .10);
   --shadow-brand: 0 8px 20px rgba(22, 163, 74, .28);
+  --page-bg: #dde7df; /* фон вокруг колонки на десктопе */
+}
+
+/* Тёмная тема для сайта (браузер). В Telegram цвета приходят из темы Telegram
+   через --tg-theme-*, поэтому переопределяем только fallback-значения —
+   внутри Telegram эти правила ни на что не влияют. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--tg-theme-bg-color, #0e1411);
+    --secondary-bg: var(--tg-theme-secondary-bg-color, #1a221d);
+    --card: var(--tg-theme-bg-color, #161e19);
+    --text: var(--tg-theme-text-color, #e8efe9);
+    --hint: var(--tg-theme-hint-color, #8fa096);
+    --border: rgba(255, 255, 255, .12);
+    --brand-soft: rgba(34, 197, 94, .16);
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, .35);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, .45);
+    --shadow-brand: 0 8px 22px rgba(22, 163, 74, .35);
+    --page-bg: #080b09;
+  }
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -249,6 +269,9 @@ html, body {
 .tab .ic { font-size: 21px; transition: transform .15s ease; }
 .tab .lbl { font-size: 11px; font-weight: 700; }
 .tab.active { color: var(--brand); }
+/* .tab задаёт display:flex и перебивает UA-правило [hidden]{display:none} —
+   возвращаем работу атрибута hidden для скрытой вкладки «Админ». */
+.tab[hidden] { display: none !important; }
 .tab.active .ic { transform: translateY(-1px) scale(1.08); }
 .tab.active::before {
   content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
@@ -309,7 +332,7 @@ html, body {
 }
 
 @media (min-width: 600px) {
-  body { background: #dde7df; }
+  body { background: var(--page-bg); }
   #app {
     max-width: 480px; margin: 0 auto; background: var(--bg);
     box-shadow: 0 0 60px rgba(16, 40, 24, .12);
