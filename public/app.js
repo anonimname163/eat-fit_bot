@@ -48,7 +48,7 @@
       adm_amount: 'Сумма', adm_topup_done: 'Баланс пополнен ✅', adm_support: 'Кнопка «Поддержка»',
       adm_topup_tg: 'Telegram для пополнения', adm_topup_phone: 'Телефон для пополнения',
       adm_saved: 'Сохранено ✅', confirm_delete: 'Удалить блюдо?', adm_new_dish: 'Новое блюдо', adm_create: 'Создать',
-      adm_user_nf: 'Пользователь не найден', adm_orders_active: 'Активные', adm_orders_all: 'Все',
+      adm_user_nf: 'Пользователь не найден', adm_orders_active: 'Активные', adm_orders_all: 'Все', adm_found: 'Всего',
     },
     uz: {
       tab_menu: 'Menyu', tab_cart: 'Savat', tab_orders: 'Buyurtmalar', tab_profile: 'Profil',
@@ -85,7 +85,7 @@
       adm_amount: 'Summa', adm_topup_done: 'Balans to‘ldirildi ✅', adm_support: '«Yordam» tugmasi',
       adm_topup_tg: 'To‘ldirish uchun Telegram', adm_topup_phone: 'To‘ldirish uchun telefon',
       adm_saved: 'Saqlandi ✅', confirm_delete: 'Taom o‘chirilsinmi?', adm_new_dish: 'Yangi taom', adm_create: 'Yaratish',
-      adm_user_nf: 'Foydalanuvchi topilmadi', adm_orders_active: 'Faol', adm_orders_all: 'Hammasi',
+      adm_user_nf: 'Foydalanuvchi topilmadi', adm_orders_active: 'Faol', adm_orders_all: 'Hammasi', adm_found: 'Jami',
     },
   };
 
@@ -545,22 +545,36 @@
   }
   function val(id) { var e = document.getElementById(id); return e ? (e.value || '').trim() : ''; }
 
-  // ----- Пользователи -----
+  // ----- Пользователи (все + живой фильтр) -----
   function admUsers(body) {
-    body.innerHTML = '<div class="field"><label>' + esc(t('adm_search_user')) + '</label>' +
-      '<input id="usrQ" placeholder="' + esc(t('adm_search_user')) + '" /></div>' +
-      '<button class="btn" id="usrSearch">' + esc(t('adm_search')) + '</button><div id="usrRes"></div>';
-    document.getElementById('usrSearch').onclick = function () {
-      var q = val('usrQ');
-      if (!q) return;
+    body.innerHTML = '<div class="field"><input id="usrQ" placeholder="🔍 ' + esc(t('adm_search_user')) + '" /></div>' +
+      '<div id="usrRes"><div class="loader">…</div></div>';
+    admApi('GET', '/users').then(function (users) {
+      state.admin.users = users;
+      renderUserList();
+      var inp = document.getElementById('usrQ');
+      if (inp) inp.oninput = renderUserList;
+    }).catch(function () {
       var res = document.getElementById('usrRes');
-      res.innerHTML = '<div class="loader">…</div>';
-      admApi('GET', '/users?q=' + encodeURIComponent(q)).then(function (users) {
-        if (!users.length) { res.innerHTML = '<div class="empty">' + esc(t('adm_user_nf')) + '</div>'; return; }
-        res.innerHTML = users.map(admUserCard).join('');
-        bindRoleButtons(res);
-      }).catch(function () { res.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>'; });
-    };
+      if (res) res.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>';
+    });
+  }
+
+  function renderUserList() {
+    var res = document.getElementById('usrRes');
+    if (!res) return;
+    var q = (val('usrQ') || '').toLowerCase().replace(/^@/, '');
+    var list = state.admin.users || [];
+    var filtered = !q ? list : list.filter(function (u) {
+      return (u.name || '').toLowerCase().indexOf(q) >= 0
+        || (u.username || '').toLowerCase().indexOf(q) >= 0
+        || (u.phone || '').toLowerCase().indexOf(q) >= 0
+        || String(u.telegram_id).indexOf(q) >= 0;
+    });
+    if (!filtered.length) { res.innerHTML = '<div class="empty">' + esc(t('adm_user_nf')) + '</div>'; return; }
+    res.innerHTML = '<div class="section-title">' + esc(t('adm_found')) + ': ' + filtered.length + '</div>' +
+      filtered.map(admUserCard).join('');
+    bindRoleButtons(res);
   }
 
   function admUserCard(u) {
@@ -578,8 +592,14 @@
   function bindRoleButtons(res) {
     res.querySelectorAll('[data-role]').forEach(function (b) {
       b.onclick = function () {
-        admApi('POST', '/users/' + b.getAttribute('data-uid') + '/role', { role: b.getAttribute('data-role') })
-          .then(function () { haptic('light'); toast(t('adm_saved')); document.getElementById('usrSearch').click(); })
+        var uid = b.getAttribute('data-uid'), role = b.getAttribute('data-role');
+        admApi('POST', '/users/' + uid + '/role', { role: role })
+          .then(function () {
+            haptic('light'); toast(t('adm_saved'));
+            var u = (state.admin.users || []).find(function (x) { return String(x.telegram_id) === String(uid); });
+            if (u) u.role = role;
+            renderUserList();
+          })
           .catch(function () { toast(t('err')); });
       };
     });

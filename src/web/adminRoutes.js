@@ -170,14 +170,22 @@ function buildAdminRouter(bot) {
   router.get('/users', async (req, res) => {
     try {
       const q = String(req.query.q || '').trim().replace(/^@/, '');
-      if (!q) return res.json([]);
-      const { rows } = await db.query(
-        `SELECT id, telegram_id, first_name, last_name, username, phone, balance, role
-           FROM clients
-          WHERE phone ILIKE $1 OR username ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
-          ORDER BY id LIMIT 10`,
-        [`%${q}%`, q]
-      );
+      let rows;
+      if (q) {
+        ({ rows } = await db.query(
+          `SELECT id, telegram_id, first_name, last_name, username, phone, balance, role
+             FROM clients
+            WHERE phone ILIKE $1 OR username ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
+            ORDER BY id DESC LIMIT 100`,
+          [`%${q}%`, q]
+        ));
+      } else {
+        // Без запроса — все пользователи (новые сверху)
+        ({ rows } = await db.query(
+          `SELECT id, telegram_id, first_name, last_name, username, phone, balance, role
+             FROM clients ORDER BY id DESC LIMIT 500`
+        ));
+      }
       res.json(rows.map((u) => ({
         id: u.id, telegram_id: String(u.telegram_id),
         name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
