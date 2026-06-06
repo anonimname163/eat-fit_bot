@@ -555,21 +555,51 @@
     });
   }
 
-  // ----- Депозиты -----
+  // ----- Депозиты (поиск пользователя → пополнение) -----
   function admDeposits(body) {
     body.innerHTML =
       '<div class="field"><label>' + esc(t('adm_search_user')) + '</label><input id="dpQ" placeholder="' + esc(t('adm_search_user')) + '" /></div>' +
-      '<div class="field"><label>' + esc(t('adm_amount')) + '</label><input id="dpAmount" inputmode="numeric" placeholder="50000" /></div>' +
-      '<button class="btn" id="dpSave">' + esc(t('adm_topup')) + '</button>';
-    document.getElementById('dpSave').onclick = function () {
-      var q = val('dpQ'); var amount = Number(val('dpAmount').replace(/\s/g, '').replace(',', '.'));
-      if (!q || !(amount > 0)) { toast(t('err')); return; }
-      var btn = document.getElementById('dpSave'); btn.disabled = true;
-      admApi('POST', '/deposits', { query: q, amount: amount }).then(function (r) {
-        haptic('medium'); toast(t('adm_topup_done') + ' · ' + money(r.balance) + ' ' + t('currency'));
-        document.getElementById('dpAmount').value = ''; btn.disabled = false;
-      }).catch(function (e) { toast(e.code === 'user_not_found' ? t('adm_user_nf') : t('err')); btn.disabled = false; });
+      '<button class="btn" id="dpSearch">' + esc(t('adm_search')) + '</button><div id="dpRes"></div>';
+    var doSearch = function () {
+      var q = val('dpQ');
+      if (!q) return;
+      var res = document.getElementById('dpRes');
+      res.innerHTML = '<div class="loader">…</div>';
+      admApi('GET', '/users?q=' + encodeURIComponent(q)).then(function (users) {
+        if (!users.length) { res.innerHTML = '<div class="empty">' + esc(t('adm_user_nf')) + '</div>'; return; }
+        res.innerHTML = users.map(dpUserCard).join('');
+        bindDeposit(res);
+      }).catch(function () { res.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>'; });
     };
+    document.getElementById('dpSearch').onclick = doSearch;
+    var inp = document.getElementById('dpQ');
+    if (inp) inp.onkeydown = function (e) { if (e.key === 'Enter') doSearch(); };
+  }
+
+  function dpUserCard(u) {
+    return '<div class="card" style="padding:12px">' +
+      '<b>' + esc(u.name || '-') + '</b>' +
+      '<div class="order-items">ID: ' + esc(u.telegram_id) + ' · 📞 ' + esc(u.phone || '-') + '</div>' +
+      '<div class="order-total">' + esc(t('balance')) + ': ' + money(u.balance) + ' ' + esc(t('currency')) + '</div>' +
+      '<div class="field" style="margin:10px 0 0"><input class="dpAmount" data-uid="' + esc(u.telegram_id) + '" inputmode="numeric" placeholder="' + esc(t('adm_amount')) + '" /></div>' +
+      '<button class="btn dpDo" data-uid="' + esc(u.telegram_id) + '">' + esc(t('adm_topup')) + '</button>' +
+    '</div>';
+  }
+
+  function bindDeposit(res) {
+    res.querySelectorAll('.dpDo').forEach(function (b) {
+      b.onclick = function () {
+        var uid = b.getAttribute('data-uid');
+        var input = res.querySelector('.dpAmount[data-uid="' + uid + '"]');
+        var amount = Number(((input && input.value) || '').replace(/\s/g, '').replace(',', '.'));
+        if (!(amount > 0)) { toast(t('err')); return; }
+        b.disabled = true;
+        admApi('POST', '/deposits', { query: uid, amount: amount }).then(function (r) {
+          haptic('medium'); toast(t('adm_topup_done') + ' · ' + money(r.balance) + ' ' + t('currency'));
+          document.getElementById('dpSearch').click(); // обновить баланс в карточке
+        }).catch(function (e) { toast(e.code === 'user_not_found' ? t('adm_user_nf') : t('err')); b.disabled = false; });
+      };
+    });
   }
 
   // ----- Настройки -----
