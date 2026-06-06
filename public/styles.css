@@ -229,3 +229,42 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ============================================================
+   Админ-панель
+   ============================================================ */
+.adm-nav {
+  display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; margin: 0 0 4px;
+  -webkit-overflow-scrolling: touch;
+}
+.adm-nav::-webkit-scrollbar { display: none; }
+.adm-navbtn {
+  flex: none; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+.adm-navbtn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Сегмент-контрол (Активные / Все) */
+.seg { display: flex; gap: 6px; margin: 0 4px 12px; }
+.seg button {
+  flex: 1; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 10px; padding: 8px; font-weight: 600; cursor: pointer;
+}
+.seg button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Чипы-действия */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip {
+  border: 1px solid var(--border); background: var(--secondary-bg); color: var(--text);
+  border-radius: 999px; padding: 7px 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.chip:active { opacity: .8; }
+.chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip-danger { color: var(--danger); border-color: rgba(226, 59, 59, .4); }
+.chip[disabled] { opacity: .5; pointer-events: none; }
+
+/* select в формах */
+.field select {
+  width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+  background: var(--bg); color: var(--text); font-size: 15px; font-family: inherit;
+}

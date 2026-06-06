@@ -1,7 +1,9 @@
 // Проверка подлинности Telegram Mini App initData (HMAC по BOT_TOKEN).
 // https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
 const crypto = require('crypto');
+const db = require('../db');
 const { getClient, isRegistered } = require('../middleware/registration');
+const { isEnvAdmin, syncAdminRole } = require('../middleware/auth');
 
 // Максимальный возраст initData (защита от повторного использования), сек.
 const MAX_AGE_SECONDS = 24 * 60 * 60;
@@ -53,30 +55,68 @@ function verifyInitData(initData, botToken) {
 }
 
 /**
- * Express-middleware: требует валидный initData и завершённую регистрацию.
- * Кладёт строку клиента в req.client и tgUser в req.tgUser.
+ * Базовая проверка: валидный initData. Гарантирует наличие строки клиента
+ * (создаёт «заготовку» для тех, кто пришёл сразу в Mini App, минуя /start).
+ * НЕ требует завершённой регистрации — используется для профиля/регистрации.
+ * Кладёт req.tgUser и req.client.
  * @param {string} botToken
  */
-function requireAuth(botToken) {
+function requireTelegram(botToken) {
   return async (req, res, next) => {
     try {
       const initData = req.get('X-Telegram-Init-Data') || '';
       const verified = verifyInitData(initData, botToken);
-      if (!verified) {
-        return res.status(401).json({ error: 'unauthorized' });
+      if (!verified) return res.status(401).json({ error: 'unauthorized' });
+
+      const tgId = verified.user.id;
+      let client = await getClient(tgId);
+      if (!client) {
+        await db.query(
+          `INSERT INTO clients (telegram_id, first_name, role)
+           VALUES ($1, $2, 'client')
+           ON CONFLICT (telegram_id) DO NOTHING`,
+          [tgId, verified.user.first_name || null]
+        );
+        client = await getClient(tgId);
       }
-      const client = await getClient(verified.user.id);
-      if (!isRegistered(client)) {
-        return res.status(403).json({ error: 'not_registered' });
+      // Синхронизировать роль admin из .env (как делает /start)
+      if (isEnvAdmin(tgId) && client && client.role !== 'admin') {
+        await syncAdminRole(tgId);
+        client = await getClient(tgId);
       }
+
       req.tgUser = verified.user;
       req.client = client;
       next();
     } catch (err) {
-      console.error('[ERROR] requireAuth:', err.message);
+      console.error('[ERROR] requireTelegram:', err.message);
       res.status(500).json({ error: 'server_error' });
     }
   };
 }
 
-module.exports = { verifyInitData, requireAuth };
+/**
+ * Требует валидный initData И завершённую регистрацию (имя/телефон/адрес).
+ * @param {string} botToken
+ */
+function requireAuth(botToken) {
+  const base = requireTelegram(botToken);
+  return (req, res, next) => base(req, res, () => {
+    if (!isRegistered(req.client)) return res.status(403).json({ error: 'not_registered' });
+    next();
+  });
+}
+
+/**
+ * Требует валидный initData И права администратора (ADMIN_TELEGRAM_IDS).
+ * @param {string} botToken
+ */
+function requireAdmin(botToken) {
+  const base = requireTelegram(botToken);
+  return (req, res, next) => base(req, res, () => {
+    if (!isEnvAdmin(req.tgUser.id)) return res.status(403).json({ error: 'forbidden' });
+    next();
+  });
+}
+
+module.exports = { verifyInitData, requireTelegram, requireAuth, requireAdmin };

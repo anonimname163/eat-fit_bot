@@ -32,6 +32,22 @@
       st_pending: 'Ожидает', st_confirmed: 'Принят', st_cooking: 'Готовится',
       st_delivering: 'Доставляется', st_done: 'Доставлен', st_cancelled: 'Отменён',
       pcs: 'шт', placing: 'Оформляем…',
+      // регистрация
+      reg_title: 'Регистрация', reg_intro: 'Заполните данные, чтобы оформлять заказы',
+      reg_save: 'Зарегистрироваться', reg_done: 'Добро пожаловать! 🎉', last_name: 'Фамилия',
+      // админка
+      tab_admin: 'Админ', adm_orders: 'Заказы', adm_menu: 'Меню', adm_users: 'Пользователи',
+      adm_deposits: 'Депозиты', adm_settings: 'Настройки', adm_no_orders: 'Активных заказов нет',
+      act_confirm: 'Принять', act_cooking: 'Готовится', act_delivering: 'Курьеру', act_done: 'Доставлен',
+      act_cancel: 'Отменить', adm_add_dish: '➕ Добавить блюдо', adm_active: 'Активно', adm_hidden: 'Скрыто',
+      adm_hide: 'Скрыть', adm_show: 'Показать', adm_edit: 'Изменить', adm_delete: 'Удалить',
+      adm_save: 'Сохранить', adm_price: 'Цена', adm_category: 'Категория', adm_photo: 'Фото (URL или file_id)',
+      adm_name_ru: 'Название (RU)', adm_name_uz: 'Название (UZ)', adm_desc_ru: 'Описание (RU)', adm_desc_uz: 'Описание (UZ)',
+      adm_search_user: 'Телефон или Telegram ID', adm_search: 'Найти', adm_role: 'Роль', adm_topup: 'Пополнить',
+      adm_amount: 'Сумма', adm_topup_done: 'Баланс пополнен ✅', adm_support: 'Кнопка «Поддержка»',
+      adm_topup_tg: 'Telegram для пополнения', adm_topup_phone: 'Телефон для пополнения',
+      adm_saved: 'Сохранено ✅', confirm_delete: 'Удалить блюдо?', adm_new_dish: 'Новое блюдо', adm_create: 'Создать',
+      adm_user_nf: 'Пользователь не найден', adm_orders_active: 'Активные', adm_orders_all: 'Все',
     },
     uz: {
       tab_menu: 'Menyu', tab_cart: 'Savat', tab_orders: 'Buyurtmalar', tab_profile: 'Profil',
@@ -52,6 +68,22 @@
       st_pending: 'Kutilmoqda', st_confirmed: 'Qabul qilindi', st_cooking: 'Tayyorlanmoqda',
       st_delivering: 'Yetkazilmoqda', st_done: 'Yetkazildi', st_cancelled: 'Bekor qilindi',
       pcs: 'dona', placing: 'Rasmiylashtirilmoqda…',
+      // ro‘yxatdan o‘tish
+      reg_title: 'Ro‘yxatdan o‘tish', reg_intro: 'Buyurtma berish uchun ma’lumotlarni to‘ldiring',
+      reg_save: 'Ro‘yxatdan o‘tish', reg_done: 'Xush kelibsiz! 🎉', last_name: 'Familiya',
+      // admin
+      tab_admin: 'Admin', adm_orders: 'Buyurtmalar', adm_menu: 'Menyu', adm_users: 'Foydalanuvchilar',
+      adm_deposits: 'Depozitlar', adm_settings: 'Sozlamalar', adm_no_orders: 'Faol buyurtmalar yo‘q',
+      act_confirm: 'Qabul', act_cooking: 'Tayyorlanmoqda', act_delivering: 'Kuryerga', act_done: 'Yetkazildi',
+      act_cancel: 'Bekor qilish', adm_add_dish: '➕ Taom qo‘shish', adm_active: 'Faol', adm_hidden: 'Yashirin',
+      adm_hide: 'Yashirish', adm_show: 'Ko‘rsatish', adm_edit: 'Tahrirlash', adm_delete: 'O‘chirish',
+      adm_save: 'Saqlash', adm_price: 'Narx', adm_category: 'Kategoriya', adm_photo: 'Rasm (URL yoki file_id)',
+      adm_name_ru: 'Nomi (RU)', adm_name_uz: 'Nomi (UZ)', adm_desc_ru: 'Tavsif (RU)', adm_desc_uz: 'Tavsif (UZ)',
+      adm_search_user: 'Telefon yoki Telegram ID', adm_search: 'Qidirish', adm_role: 'Rol', adm_topup: 'To‘ldirish',
+      adm_amount: 'Summa', adm_topup_done: 'Balans to‘ldirildi ✅', adm_support: '«Yordam» tugmasi',
+      adm_topup_tg: 'To‘ldirish uchun Telegram', adm_topup_phone: 'To‘ldirish uchun telefon',
+      adm_saved: 'Saqlandi ✅', confirm_delete: 'Taom o‘chirilsinmi?', adm_new_dish: 'Yangi taom', adm_create: 'Yaratish',
+      adm_user_nf: 'Foydalanuvchi topilmadi', adm_orders_active: 'Faol', adm_orders_all: 'Hammasi',
     },
   };
 
@@ -64,6 +96,8 @@
     config: null,      // публичная конфигурация
     payFromBalance: false,
     comment: '',
+    adminSection: 'orders',          // активный раздел админки
+    admin: { ordersFilter: 'active', users: [], editDish: null }, // временные данные админки
   };
 
   function t(key) { return (I18N[state.lang] && I18N[state.lang][key]) || key; }
@@ -290,13 +324,282 @@
     return 'https://t.me/' + v.replace(/^@/, '');
   }
 
+  // ---------------- Registration ----------------
+  function viewRegister() {
+    var m = state.me || {};
+    var html = '<div class="section-title">' + esc(t('reg_title')) + '</div>';
+    html += '<div class="banner">📝 ' + esc(t('reg_intro')) + '</div>';
+    html += '<div class="field"><label>' + esc(t('name')) + '</label><input id="rgName" value="' + esc(((m.first_name || '') + ' ' + (m.last_name || '')).trim()) + '" placeholder="' + esc(t('name')) + '" /></div>';
+    html += '<div class="field"><label>' + esc(t('phone')) + '</label><input id="rgPhone" value="' + esc(m.phone || '') + '" placeholder="+998…" /></div>';
+    html += '<div class="field"><label>' + esc(t('address')) + '</label><input id="rgAddr" value="' + esc(m.address || '') + '" /></div>';
+    html += '<button class="btn" id="rgSave">' + esc(t('reg_save')) + '</button>';
+    return html;
+  }
+
+  function bindRegister() {
+    var btn = document.getElementById('rgSave');
+    if (btn) btn.onclick = function () {
+      var name = (document.getElementById('rgName').value || '').trim().replace(/\s+/g, ' ');
+      var phone = (document.getElementById('rgPhone').value || '').trim();
+      var addr = (document.getElementById('rgAddr').value || '').trim();
+      if (!name || !phone || !addr) { toast(t('err')); return; }
+      var parts = name.split(' ');
+      btn.disabled = true; btn.textContent = '…';
+      api('PUT', '/me', { first_name: parts[0], last_name: parts.slice(1).join(' '), phone: phone, address: addr, language: state.lang })
+        .then(function (me) { state.me = me; haptic('medium'); toast(t('reg_done')); setTab('menu'); })
+        .catch(function (e) { toast(e.code === 'invalid_phone' ? t('phone') + ' ✗' : t('err')); btn.disabled = false; btn.textContent = t('reg_save'); });
+    };
+  }
+
+  // ---------------- Admin ----------------
+  function renderAdmin() {
+    var secs = [
+      ['orders', t('adm_orders')], ['menu', t('adm_menu')], ['users', t('adm_users')],
+      ['deposits', t('adm_deposits')], ['settings', t('adm_settings')],
+    ];
+    var nav = '<div class="adm-nav">' + secs.map(function (s) {
+      return '<button class="adm-navbtn ' + (state.adminSection === s[0] ? 'active' : '') + '" data-sec="' + s[0] + '">' + esc(s[1]) + '</button>';
+    }).join('') + '</div>';
+    viewEl.innerHTML = nav + '<div id="admBody"><div class="loader">…</div></div>';
+    viewEl.querySelectorAll('[data-sec]').forEach(function (b) {
+      b.onclick = function () { state.adminSection = b.getAttribute('data-sec'); renderAdmin(); };
+    });
+    var body = document.getElementById('admBody');
+    if (state.adminSection === 'orders') admOrders(body);
+    else if (state.adminSection === 'menu') admMenu(body);
+    else if (state.adminSection === 'users') admUsers(body);
+    else if (state.adminSection === 'deposits') admDeposits(body);
+    else if (state.adminSection === 'settings') admSettings(body);
+  }
+
+  function admApi(method, path, body) { return api(method, '/admin' + path, body); }
+
+  // ----- Заказы -----
+  function admOrders(body) {
+    var f = state.admin.ordersFilter;
+    var tabs = '<div class="seg">' +
+      '<button class="' + (f === 'active' ? 'on' : '') + '" data-f="active">' + esc(t('adm_orders_active')) + '</button>' +
+      '<button class="' + (f === 'all' ? 'on' : '') + '" data-f="all">' + esc(t('adm_orders_all')) + '</button></div>';
+    body.innerHTML = tabs + '<div class="loader">…</div>';
+    var bindSeg = function () {
+      body.querySelectorAll('[data-f]').forEach(function (b) {
+        b.onclick = function () { state.admin.ordersFilter = b.getAttribute('data-f'); admOrders(body); };
+      });
+    };
+    bindSeg();
+    admApi('GET', '/orders?filter=' + f).then(function (orders) {
+      var list = orders.map(admOrderCard).join('') || '<div class="empty">' + esc(t('adm_no_orders')) + '</div>';
+      body.innerHTML = tabs + list;
+      bindSeg();
+      bindOrderActions(body);
+    }).catch(function () { body.innerHTML = tabs + '<div class="empty">' + esc(t('err')) + '</div>'; bindSeg(); });
+  }
+
+  function admOrderCard(o) {
+    var items = o.items.map(function (it) { return esc(state.lang === 'uz' ? it.name_uz : it.name_ru) + ' ×' + it.quantity; }).join(', ');
+    var next = {
+      pending: [['confirmed', 'act_confirm'], ['cancelled', 'act_cancel']],
+      confirmed: [['cooking', 'act_cooking'], ['cancelled', 'act_cancel']],
+      cooking: [['delivering', 'act_delivering'], ['cancelled', 'act_cancel']],
+      delivering: [['done', 'act_done'], ['cancelled', 'act_cancel']],
+    }[o.status] || [];
+    var btns = next.map(function (a) {
+      return '<button class="chip ' + (a[0] === 'cancelled' ? 'chip-danger' : '') + '" data-oid="' + o.id + '" data-st="' + a[0] + '">' + esc(t(a[1])) + '</button>';
+    }).join('');
+    return '<div class="card order-card">' +
+      '<div class="order-head"><span class="order-id">#' + o.id + ' · ' + esc(o.client.name || '-') + '</span>' +
+      '<span class="status-pill st-' + o.status + '">' + esc(t('st_' + o.status)) + '</span></div>' +
+      '<div class="order-items">' + items + '</div>' +
+      '<div class="order-items">📍 ' + esc(o.delivery_address || '-') + ' · 📞 ' + esc(o.client.phone || '-') + '</div>' +
+      (o.comment ? '<div class="order-items">📝 ' + esc(o.comment) + '</div>' : '') +
+      '<div class="order-total">' + money(o.total_amount) + ' ' + esc(t('currency')) + '</div>' +
+      (btns ? '<div class="chips">' + btns + '</div>' : '') +
+    '</div>';
+  }
+
+  function bindOrderActions(body) {
+    body.querySelectorAll('[data-st]').forEach(function (b) {
+      b.onclick = function () {
+        b.disabled = true;
+        admApi('POST', '/orders/' + b.getAttribute('data-oid') + '/status', { status: b.getAttribute('data-st') })
+          .then(function () { haptic('light'); admOrders(body); })
+          .catch(function () { toast(t('err')); b.disabled = false; });
+      };
+    });
+  }
+
+  // ----- Меню -----
+  function admMenu(body) {
+    body.innerHTML = '<div class="loader">…</div>';
+    admApi('GET', '/menu').then(function (items) {
+      var html = '<button class="btn" id="admAddDish">' + esc(t('adm_add_dish')) + '</button>';
+      html += items.map(admDishCard).join('');
+      body.innerHTML = html;
+      document.getElementById('admAddDish').onclick = function () { state.admin.editDish = { isNew: true, category: 'main' }; renderDishForm(body); };
+      bindDishActions(body);
+    }).catch(function () { body.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>'; });
+  }
+
+  function admDishCard(d) {
+    var dot = d.is_active ? '🟢' : '🔴';
+    return '<div class="card" style="padding:12px">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+      '<b>' + dot + ' ' + esc(state.lang === 'uz' ? d.name_uz || d.name_ru : d.name_ru) + '</b>' +
+      '<span class="dish-price">' + money(d.price) + ' ' + esc(t('currency')) + '</span></div>' +
+      '<div class="order-items">' + esc(t('cat_' + d.category)) + '</div>' +
+      '<div class="chips">' +
+        '<button class="chip" data-edit="' + d.id + '">✏️ ' + esc(t('adm_edit')) + '</button>' +
+        '<button class="chip" data-toggle="' + d.id + '" data-act="' + (d.is_active ? 'false' : 'true') + '">' + (d.is_active ? esc(t('adm_hide')) : esc(t('adm_show'))) + '</button>' +
+        '<button class="chip chip-danger" data-del="' + d.id + '">🗑 ' + esc(t('adm_delete')) + '</button>' +
+      '</div></div>';
+  }
+
+  function bindDishActions(body) {
+    body.querySelectorAll('[data-toggle]').forEach(function (b) {
+      b.onclick = function () {
+        admApi('PUT', '/menu/' + b.getAttribute('data-toggle'), { is_active: b.getAttribute('data-act') === 'true' })
+          .then(function () { admMenu(body); }).catch(function () { toast(t('err')); });
+      };
+    });
+    body.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm(t('confirm_delete'))) return;
+        admApi('DELETE', '/menu/' + b.getAttribute('data-del')).then(function () { admMenu(body); }).catch(function () { toast(t('err')); });
+      };
+    });
+    body.querySelectorAll('[data-edit]').forEach(function (b) {
+      b.onclick = function () {
+        admApi('GET', '/menu').then(function (items) {
+          var d = items.find(function (x) { return x.id === Number(b.getAttribute('data-edit')); });
+          state.admin.editDish = Object.assign({ isNew: false }, d);
+          renderDishForm(body);
+        });
+      };
+    });
+  }
+
+  function renderDishForm(body) {
+    var d = state.admin.editDish || {};
+    function fld(id, label, v) { return '<div class="field"><label>' + esc(label) + '</label><input id="' + id + '" value="' + esc(v == null ? '' : v) + '" /></div>'; }
+    var cats = ['main', 'drink', 'dessert'].map(function (c) {
+      return '<option value="' + c + '"' + (d.category === c ? ' selected' : '') + '>' + esc(t('cat_' + c)) + '</option>';
+    }).join('');
+    var html = '<div class="section-title">' + esc(d.isNew ? t('adm_new_dish') : t('adm_edit')) + '</div>';
+    html += fld('dfNameRu', t('adm_name_ru'), d.name_ru);
+    html += fld('dfNameUz', t('adm_name_uz'), d.name_uz);
+    html += fld('dfDescRu', t('adm_desc_ru'), d.description_ru);
+    html += fld('dfDescUz', t('adm_desc_uz'), d.description_uz);
+    html += '<div class="field"><label>' + esc(t('adm_category')) + '</label><select id="dfCat">' + cats + '</select></div>';
+    html += fld('dfPrice', t('adm_price'), d.price);
+    html += fld('dfPhoto', t('adm_photo'), d.photo_url);
+    html += '<button class="btn" id="dfSave">' + esc(d.isNew ? t('adm_create') : t('adm_save')) + '</button>';
+    html += '<button class="btn secondary" id="dfBack">←</button>';
+    body.innerHTML = html;
+    document.getElementById('dfBack').onclick = function () { state.admin.editDish = null; admMenu(body); };
+    document.getElementById('dfSave').onclick = function () {
+      var payload = {
+        name_ru: val('dfNameRu'), name_uz: val('dfNameUz'),
+        description_ru: val('dfDescRu'), description_uz: val('dfDescUz'),
+        category: document.getElementById('dfCat').value,
+        price: Number(val('dfPrice').replace(/\s/g, '').replace(',', '.')),
+        photo_url: val('dfPhoto'),
+      };
+      var req = d.isNew ? admApi('POST', '/menu', payload) : admApi('PUT', '/menu/' + d.id, payload);
+      req.then(function () { state.admin.editDish = null; toast(t('adm_saved')); admMenu(body); })
+        .catch(function () { toast(t('err')); });
+    };
+  }
+  function val(id) { var e = document.getElementById(id); return e ? (e.value || '').trim() : ''; }
+
+  // ----- Пользователи -----
+  function admUsers(body) {
+    body.innerHTML = '<div class="field"><label>' + esc(t('adm_search_user')) + '</label>' +
+      '<input id="usrQ" placeholder="' + esc(t('adm_search_user')) + '" /></div>' +
+      '<button class="btn" id="usrSearch">' + esc(t('adm_search')) + '</button><div id="usrRes"></div>';
+    document.getElementById('usrSearch').onclick = function () {
+      var q = val('usrQ');
+      if (!q) return;
+      var res = document.getElementById('usrRes');
+      res.innerHTML = '<div class="loader">…</div>';
+      admApi('GET', '/users?q=' + encodeURIComponent(q)).then(function (users) {
+        if (!users.length) { res.innerHTML = '<div class="empty">' + esc(t('adm_user_nf')) + '</div>'; return; }
+        res.innerHTML = users.map(admUserCard).join('');
+        bindRoleButtons(res);
+      }).catch(function () { res.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>'; });
+    };
+  }
+
+  function admUserCard(u) {
+    var roles = ['client', 'cook', 'courier', 'admin'].map(function (r) {
+      return '<button class="chip ' + (u.role === r ? 'on' : '') + '" data-uid="' + u.telegram_id + '" data-role="' + r + '">' + r + '</button>';
+    }).join('');
+    return '<div class="card" style="padding:12px">' +
+      '<b>' + esc(u.name || '-') + '</b>' +
+      '<div class="order-items">ID: ' + esc(u.telegram_id) + ' · 📞 ' + esc(u.phone || '-') + '</div>' +
+      '<div class="order-items">' + esc(t('balance')) + ': ' + money(u.balance) + ' ' + esc(t('currency')) + '</div>' +
+      '<div class="order-items">' + esc(t('adm_role')) + ':</div><div class="chips">' + roles + '</div></div>';
+  }
+
+  function bindRoleButtons(res) {
+    res.querySelectorAll('[data-role]').forEach(function (b) {
+      b.onclick = function () {
+        admApi('POST', '/users/' + b.getAttribute('data-uid') + '/role', { role: b.getAttribute('data-role') })
+          .then(function () { haptic('light'); toast(t('adm_saved')); document.getElementById('usrSearch').click(); })
+          .catch(function () { toast(t('err')); });
+      };
+    });
+  }
+
+  // ----- Депозиты -----
+  function admDeposits(body) {
+    body.innerHTML =
+      '<div class="field"><label>' + esc(t('adm_search_user')) + '</label><input id="dpQ" placeholder="' + esc(t('adm_search_user')) + '" /></div>' +
+      '<div class="field"><label>' + esc(t('adm_amount')) + '</label><input id="dpAmount" inputmode="numeric" placeholder="50000" /></div>' +
+      '<button class="btn" id="dpSave">' + esc(t('adm_topup')) + '</button>';
+    document.getElementById('dpSave').onclick = function () {
+      var q = val('dpQ'); var amount = Number(val('dpAmount').replace(/\s/g, '').replace(',', '.'));
+      if (!q || !(amount > 0)) { toast(t('err')); return; }
+      var btn = document.getElementById('dpSave'); btn.disabled = true;
+      admApi('POST', '/deposits', { query: q, amount: amount }).then(function (r) {
+        haptic('medium'); toast(t('adm_topup_done') + ' · ' + money(r.balance) + ' ' + t('currency'));
+        document.getElementById('dpAmount').value = ''; btn.disabled = false;
+      }).catch(function (e) { toast(e.code === 'user_not_found' ? t('adm_user_nf') : t('err')); btn.disabled = false; });
+    };
+  }
+
+  // ----- Настройки -----
+  function admSettings(body) {
+    body.innerHTML = '<div class="loader">…</div>';
+    admApi('GET', '/settings').then(function (s) {
+      body.innerHTML =
+        '<div class="field"><label>' + esc(t('adm_support')) + '</label><input id="stSupport" value="' + esc(s.support || '') + '" placeholder="@username / https://t.me/… / +998…" /></div>' +
+        '<div class="field"><label>' + esc(t('adm_topup_tg')) + '</label><input id="stTg" value="' + esc(s.topup_telegram || '') + '" /></div>' +
+        '<div class="field"><label>' + esc(t('adm_topup_phone')) + '</label><input id="stPhone" value="' + esc(s.topup_phone || '') + '" /></div>' +
+        '<button class="btn" id="stSave">' + esc(t('adm_save')) + '</button>';
+      document.getElementById('stSave').onclick = function () {
+        admApi('PUT', '/settings', { support: val('stSupport'), topup_telegram: val('stTg'), topup_phone: val('stPhone') })
+          .then(function () { haptic('light'); toast(t('adm_saved')); api('GET', '/config').then(function (c) { state.config = c; }); })
+          .catch(function () { toast(t('err')); });
+      };
+    }).catch(function () { body.innerHTML = '<div class="empty">' + esc(t('err')) + '</div>'; });
+  }
+
   // ---------------- Main render ----------------
+  function needsRegistration() {
+    // Админам не навязываем клиентскую регистрацию — у них есть своя панель
+    return inTelegram && state.me && !state.me.registered && !state.me.is_admin;
+  }
+
   function render() {
     applyStaticI18n();
+    // Гейт регистрации: пока профиль не заполнен — показываем форму регистрации
+    if (needsRegistration()) { viewEl.innerHTML = viewRegister(); bindRegister(); updateBadge(); window.scrollTo(0, 0); return; }
+
     if (state.tab === 'menu') { viewEl.innerHTML = viewMenu(); bindMenu(); }
     else if (state.tab === 'cart') { viewEl.innerHTML = viewCart(); bindCart(); }
     else if (state.tab === 'orders') { renderOrders(); }
     else if (state.tab === 'profile') { viewEl.innerHTML = viewProfile(); bindProfile(); }
+    else if (state.tab === 'admin') { renderAdmin(); }
     updateBadge();
     window.scrollTo(0, 0);
   }
@@ -441,9 +744,14 @@
       jobs.push(api('GET', '/me').then(function (me) {
         state.me = me;
         if (me.language) state.lang = me.language;
+        // Вкладка «Админ» — только для администраторов
+        if (me.is_admin) { var at = document.getElementById('adminTab'); if (at) at.hidden = false; }
       }).catch(function () {}));
     }
-    Promise.all(jobs).then(function () { render(); });
+    Promise.all(jobs).then(function () {
+      // Если требуется регистрация — сразу показываем форму
+      render();
+    });
   }
 
   init();

@@ -5,7 +5,26 @@ const menu = require('../handlers/menu');
 const notify = require('../utils/notify');
 const settings = require('../settings');
 const orderService = require('../services/orders');
-const { requireAuth } = require('./auth');
+const { requireAuth, requireTelegram } = require('./auth');
+const { isEnvAdmin } = require('../middleware/auth');
+const { isRegistered } = require('../middleware/registration');
+const { buildAdminRouter } = require('./adminRoutes');
+
+/** Привести строку клиента к ответу профиля. */
+function meJson(client, tgUser) {
+  return {
+    id: client.id,
+    first_name: client.first_name,
+    last_name: client.last_name,
+    phone: client.phone,
+    address: client.address,
+    language: client.language || 'ru',
+    balance: Number(client.balance),
+    role: client.role || 'client',
+    registered: isRegistered(client),
+    is_admin: isEnvAdmin(tgUser.id),
+  };
+}
 
 /**
  * Собрать роутер API.
@@ -15,6 +34,10 @@ function buildRouter(bot) {
   const router = express.Router();
   const botToken = process.env.BOT_TOKEN;
   const auth = requireAuth(botToken);
+  const tgAuth = requireTelegram(botToken);
+
+  // Админ-API
+  router.use('/admin', buildAdminRouter(bot));
 
   // ---- Публичные эндпоинты (без авторизации) ----
 
@@ -59,23 +82,13 @@ function buildRouter(bot) {
 
   // ---- Авторизованные эндпоинты (нужен валидный initData) ----
 
-  // Профиль + баланс
-  router.get('/me', auth, (req, res) => {
-    const c = req.client;
-    res.json({
-      id: c.id,
-      first_name: c.first_name,
-      last_name: c.last_name,
-      phone: c.phone,
-      address: c.address,
-      language: c.language || 'ru',
-      balance: Number(c.balance),
-      role: c.role || 'client',
-    });
+  // Профиль + баланс (+ флаги registered/is_admin). Доступно и до регистрации.
+  router.get('/me', tgAuth, (req, res) => {
+    res.json(meJson(req.client, req.tgUser));
   });
 
-  // Обновление профиля (имя/фамилия/телефон/адрес/язык)
-  router.put('/me', auth, async (req, res) => {
+  // Создание/обновление профиля — также завершает регистрацию (имя+телефон+адрес).
+  router.put('/me', tgAuth, async (req, res) => {
     try {
       const b = req.body || {};
       const fields = [];
@@ -109,17 +122,7 @@ function buildRouter(bot) {
         `UPDATE clients SET ${fields.join(', ')} WHERE id = $${n} RETURNING *`,
         values
       );
-      const c = rows[0];
-      res.json({
-        id: c.id,
-        first_name: c.first_name,
-        last_name: c.last_name,
-        phone: c.phone,
-        address: c.address,
-        language: c.language || 'ru',
-        balance: Number(c.balance),
-        role: c.role || 'client',
-      });
+      res.json(meJson(rows[0], req.tgUser));
     } catch (err) {
       console.error('[ERROR] PUT /me:', err.message);
       res.status(500).json({ error: 'server_error' });
