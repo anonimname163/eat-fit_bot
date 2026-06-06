@@ -8,6 +8,10 @@ function mainMenuKeyboard(lang, role, isAdmin) {
     [t(lang, 'btn_my_orders'), t(lang, 'btn_profile')],
     [t(lang, 'btn_balance'), t(lang, 'btn_support')],
   ];
+  // Кнопка открытия Mini App (если задан публичный URL приложения)
+  if (process.env.WEB_APP_URL) {
+    rows.push([{ text: t(lang, 'btn_webapp'), web_app: { url: process.env.WEB_APP_URL } }]);
+  }
   if (role === 'cook') rows.push([t(lang, 'btn_cook_mode')]);
   if (role === 'courier') rows.push([t(lang, 'btn_courier_mode')]);
   // Кнопка админки — только реальным админам из ADMIN_TELEGRAM_IDS

@@ -16,6 +16,7 @@ const cook = require('./handlers/cook');
 const courier = require('./handlers/courier');
 const admin = require('./handlers/admin');
 const report = require('./report');
+const { startWebServer } = require('./web/server');
 
 const token = process.env.BOT_TOKEN;
 if (!token) {
@@ -38,6 +39,23 @@ async function setupCommands() {
     console.log('[INFO] Команды бота установлены');
   } catch (err) {
     console.error('[ERROR] setMyCommands:', err.message);
+  }
+}
+
+// Кнопка-меню Mini App (рядом с полем ввода), если задан публичный URL приложения.
+async function setupMenuButton() {
+  const url = process.env.WEB_APP_URL;
+  if (!url) {
+    console.log('[INFO] WEB_APP_URL не задан — кнопка Mini App не установлена');
+    return;
+  }
+  try {
+    await bot.setChatMenuButton({
+      menu_button: { type: 'web_app', text: 'Eat&fit', web_app: { url } },
+    });
+    console.log('[INFO] Кнопка-меню Mini App установлена');
+  } catch (err) {
+    console.error('[ERROR] setChatMenuButton:', err.message);
   }
 }
 
@@ -385,7 +403,9 @@ process.on('unhandledRejection', (reason) => {
     process.exit(1);
   }
   await setupCommands();
+  await setupMenuButton();
   report.startDailyReportScheduler(bot);
+  startWebServer(bot);
   console.log('[INFO] Eat&fit bot запущен (polling)');
 })();
 

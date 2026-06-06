@@ -81,6 +81,10 @@ const dict = {
     ru: '🆘 Поддержка',
     uz: '🆘 Yordam',
   },
+  btn_webapp: {
+    ru: '🌐 Открыть приложение',
+    uz: '🌐 Ilovani ochish',
+  },
 
   // ---- Профиль / баланс ----
   profile_title: {

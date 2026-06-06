@@ -6,6 +6,7 @@ const kb = require('../keyboards');
 const menu = require('./menu');
 const { getClient } = require('../middleware/registration');
 const notify = require('../utils/notify');
+const orderService = require('../services/orders');
 
 /**
  * Открыть карточку конкретного блюда (deep link или из меню).
@@ -412,57 +413,19 @@ async function confirmOrder(bot, query, client) {
   console.log(`[ORDER] confirmOrder: клиент ${telegramId}, позиций ${cartItems.length}, сумма ${total}, оплата ${cart.payFromBalance ? 'баланс' : 'наличные'}`);
 
   try {
-    const order = await db.withTransaction(async (tx) => {
-      // Перечитываем баланс внутри транзакции (актуальность)
-      const { rows: cl } = await tx.query(
-        'SELECT id, balance FROM clients WHERE id = $1 FOR UPDATE',
-        [client.id]
-      );
-      const fresh = cl[0];
-      let paidFromBalance = 0;
-
-      if (cart.payFromBalance) {
-        if (Number(fresh.balance) < total) {
-          throw new Error('INSUFFICIENT_BALANCE');
-        }
-        paidFromBalance = total;
-        await tx.query(
-          'UPDATE clients SET balance = balance - $1 WHERE id = $2',
-          [paidFromBalance, client.id]
-        );
-      }
-
-      const { rows: orderRows } = await tx.query(
-        `INSERT INTO orders (client_id, status, total_amount, paid_from_balance, delivery_address, comment)
-         VALUES ($1, 'pending', $2, $3, $4, $5)
-         RETURNING *`,
-        [client.id, total, paidFromBalance, client.address, cart.comment]
-      );
-      const newOrder = orderRows[0];
-
-      for (const { item, quantity } of cartItems) {
-        await tx.query(
-          `INSERT INTO order_items (order_id, menu_item_id, quantity, price_at_order)
-           VALUES ($1, $2, $3, $4)`,
-          [newOrder.id, item.id, quantity, item.price]
-        );
-      }
-
-      return newOrder;
+    const lines = cartItems.map(({ item, quantity }) => ({ itemId: item.id, quantity }));
+    const order = await orderService.placeOrder(bot, client, lines, {
+      payFromBalance: cart.payFromBalance,
+      comment: cart.comment,
     });
 
     state.clearCart(telegramId);
-    console.log(`[ORDER] Создан заказ #${order.id} клиентом ${telegramId} на сумму ${total}`);
 
     await bot.sendMessage(
       chatId,
       `✅ ${t(lang, 'order_created')} #${order.id}`,
       { reply_markup: { remove_keyboard: false } }
     );
-
-    // Уведомить поваров и админ-группу
-    await notify.notifyCookGroup(bot, order);
-    await notify.notifyAdminGroup(bot, order);
   } catch (err) {
     if (err.message === 'INSUFFICIENT_BALANCE') {
       await bot.sendMessage(chatId, t(lang, 'balance_insufficient'));

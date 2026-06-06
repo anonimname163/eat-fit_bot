@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>Eat&fit — доставка еды</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">🍽 <span>Eat&fit</span></div>
+      <button id="langBtn" class="lang-btn" type="button">RU</button>
+    </header>
+
+    <main id="view" class="view"><div class="loader">…</div></main>
+
+    <nav class="tabbar" id="tabbar">
+      <button class="tab" data-tab="menu"><span class="ic">🍽</span><span class="lbl" data-i18n="tab_menu">Меню</span></button>
+      <button class="tab" data-tab="cart"><span class="ic">🛒</span><span class="lbl" data-i18n="tab_cart">Корзина</span><span class="badge" id="cartBadge" hidden>0</span></button>
+      <button class="tab" data-tab="orders"><span class="ic">📦</span><span class="lbl" data-i18n="tab_orders">Заказы</span></button>
+      <button class="tab" data-tab="profile"><span class="ic">👤</span><span class="lbl" data-i18n="tab_profile">Профиль</span></button>
+    </nav>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
