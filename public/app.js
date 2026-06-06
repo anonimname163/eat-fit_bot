@@ -42,8 +42,9 @@
       act_cancel: 'Отменить', adm_add_dish: '➕ Добавить блюдо', adm_active: 'Активно', adm_hidden: 'Скрыто',
       adm_hide: 'Скрыть', adm_show: 'Показать', adm_edit: 'Изменить', adm_delete: 'Удалить',
       adm_save: 'Сохранить', adm_price: 'Цена', adm_category: 'Категория', adm_photo: 'Фото (URL или file_id)',
+      adm_photo_upload: '📷 Загрузить фото', uploading: 'Загрузка фото…',
       adm_name_ru: 'Название (RU)', adm_name_uz: 'Название (UZ)', adm_desc_ru: 'Описание (RU)', adm_desc_uz: 'Описание (UZ)',
-      adm_search_user: 'Телефон или Telegram ID', adm_search: 'Найти', adm_role: 'Роль', adm_topup: 'Пополнить',
+      adm_search_user: 'Телефон, @ник или ID', adm_search: 'Найти', adm_role: 'Роль', adm_topup: 'Пополнить',
       adm_amount: 'Сумма', adm_topup_done: 'Баланс пополнен ✅', adm_support: 'Кнопка «Поддержка»',
       adm_topup_tg: 'Telegram для пополнения', adm_topup_phone: 'Телефон для пополнения',
       adm_saved: 'Сохранено ✅', confirm_delete: 'Удалить блюдо?', adm_new_dish: 'Новое блюдо', adm_create: 'Создать',
@@ -78,8 +79,9 @@
       act_cancel: 'Bekor qilish', adm_add_dish: '➕ Taom qo‘shish', adm_active: 'Faol', adm_hidden: 'Yashirin',
       adm_hide: 'Yashirish', adm_show: 'Ko‘rsatish', adm_edit: 'Tahrirlash', adm_delete: 'O‘chirish',
       adm_save: 'Saqlash', adm_price: 'Narx', adm_category: 'Kategoriya', adm_photo: 'Rasm (URL yoki file_id)',
+      adm_photo_upload: '📷 Rasm yuklash', uploading: 'Rasm yuklanmoqda…',
       adm_name_ru: 'Nomi (RU)', adm_name_uz: 'Nomi (UZ)', adm_desc_ru: 'Tavsif (RU)', adm_desc_uz: 'Tavsif (UZ)',
-      adm_search_user: 'Telefon yoki Telegram ID', adm_search: 'Qidirish', adm_role: 'Rol', adm_topup: 'To‘ldirish',
+      adm_search_user: 'Telefon, @nik yoki ID', adm_search: 'Qidirish', adm_role: 'Rol', adm_topup: 'To‘ldirish',
       adm_amount: 'Summa', adm_topup_done: 'Balans to‘ldirildi ✅', adm_support: '«Yordam» tugmasi',
       adm_topup_tg: 'To‘ldirish uchun Telegram', adm_topup_phone: 'To‘ldirish uchun telefon',
       adm_saved: 'Saqlandi ✅', confirm_delete: 'Taom o‘chirilsinmi?', adm_new_dish: 'Yangi taom', adm_create: 'Yaratish',
@@ -375,6 +377,16 @@
 
   function admApi(method, path, body) { return api(method, '/admin' + path, body); }
 
+  // Загрузка фото: шлём бинарь файла, получаем Telegram file_id
+  function uploadPhoto(file, onDone) {
+    var opts = { method: 'POST', headers: { 'Content-Type': file.type || 'image/jpeg' }, body: file };
+    if (initData) opts.headers['X-Telegram-Init-Data'] = initData;
+    fetch('/api/admin/upload', opts)
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw d; return d; }); })
+      .then(function (d) { onDone(d.file_id); })
+      .catch(function () { toast(t('err')); onDone(null); });
+  }
+
   // ----- Заказы -----
   function admOrders(body) {
     var f = state.admin.ordersFilter;
@@ -496,10 +508,27 @@
     html += fld('dfDescUz', t('adm_desc_uz'), d.description_uz);
     html += '<div class="field"><label>' + esc(t('adm_category')) + '</label><select id="dfCat">' + cats + '</select></div>';
     html += fld('dfPrice', t('adm_price'), d.price);
+    // Загрузка фото с диска + превью
+    var prevShown = !!(d.id && d.photo_url);
+    html += '<div class="field"><label>' + esc(t('adm_photo_upload')) + '</label>' +
+      '<input type="file" accept="image/*" id="dfPhotoFile" />' +
+      '<img id="dfPrev" class="dish-photo" style="width:104px;height:104px;margin-top:8px;' + (prevShown ? '' : 'display:none') + '"' +
+        (prevShown ? ' src="/api/menu/' + d.id + '/photo"' : '') + ' alt="" /></div>';
     html += fld('dfPhoto', t('adm_photo'), d.photo_url);
     html += '<button class="btn" id="dfSave">' + esc(d.isNew ? t('adm_create') : t('adm_save')) + '</button>';
     html += '<button class="btn secondary" id="dfBack">←</button>';
     body.innerHTML = html;
+    var fileInp = document.getElementById('dfPhotoFile');
+    if (fileInp) fileInp.onchange = function () {
+      var f = fileInp.files && fileInp.files[0];
+      if (!f) return;
+      var prevImg = document.getElementById('dfPrev');
+      try { if (prevImg) { prevImg.src = URL.createObjectURL(f); prevImg.style.display = ''; } } catch (e) {}
+      toast(t('uploading'));
+      uploadPhoto(f, function (fid) {
+        if (fid) { document.getElementById('dfPhoto').value = fid; toast(t('adm_saved')); }
+      });
+    };
     document.getElementById('dfBack').onclick = function () { state.admin.editDish = null; admMenu(body); };
     document.getElementById('dfSave').onclick = function () {
       var payload = {
@@ -540,6 +569,7 @@
     }).join('');
     return '<div class="card" style="padding:12px">' +
       '<b>' + esc(u.name || '-') + '</b>' +
+      (u.username ? '<div class="order-items">🔗 @' + esc(u.username) + '</div>' : '') +
       '<div class="order-items">ID: ' + esc(u.telegram_id) + ' · 📞 ' + esc(u.phone || '-') + '</div>' +
       '<div class="order-items">' + esc(t('balance')) + ': ' + money(u.balance) + ' ' + esc(t('currency')) + '</div>' +
       '<div class="order-items">' + esc(t('adm_role')) + ':</div><div class="chips">' + roles + '</div></div>';
@@ -579,6 +609,7 @@
   function dpUserCard(u) {
     return '<div class="card" style="padding:12px">' +
       '<b>' + esc(u.name || '-') + '</b>' +
+      (u.username ? '<div class="order-items">🔗 @' + esc(u.username) + '</div>' : '') +
       '<div class="order-items">ID: ' + esc(u.telegram_id) + ' · 📞 ' + esc(u.phone || '-') + '</div>' +
       '<div class="order-total">' + esc(t('balance')) + ': ' + money(u.balance) + ' ' + esc(t('currency')) + '</div>' +
       '<div class="field" style="margin:10px 0 0"><input class="dpAmount" data-uid="' + esc(u.telegram_id) + '" inputmode="numeric" placeholder="' + esc(t('adm_amount')) + '" /></div>' +

@@ -487,7 +487,7 @@ async function handleUserSearchStep(bot, msg) {
 
   const { rows } = await db.query(
     `SELECT * FROM clients
-      WHERE phone ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
+      WHERE phone ILIKE $1 OR username ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
       ORDER BY id LIMIT 5`,
     [`%${q}%`, q]
   );
@@ -504,12 +504,13 @@ async function handleUserSearchStep(bot, msg) {
     );
     const lines = [
       `👤 <b>${esc(`${u.first_name || ''} ${u.last_name || ''}`.trim())}</b>`,
+      u.username ? `🔗 @${esc(u.username)}` : null,
       `ID: <code>${esc(u.telegram_id)}</code>`,
       `${esc(t(lang, 'profile_phone'))}: ${esc(u.phone || '-')}`,
       `${esc(t(lang, 'profile_balance'))}: ${esc(formatMoney(u.balance))} ${esc(t(lang, 'currency'))}`,
       `Role: ${esc(u.role)}`,
       `${esc(t(lang, 'btn_my_orders'))}: ${orderCount[0].c}`,
-    ];
+    ].filter(Boolean);
     await bot.sendMessage(chatId, lines.join('\n'), {
       parse_mode: 'HTML',
       reply_markup: {
@@ -564,7 +565,7 @@ async function handleDepositStep(bot, msg) {
   if (session.step === 'client') {
     const q = (msg.text || '').trim().replace(/^@/, '');
     const { rows } = await db.query(
-      `SELECT * FROM clients WHERE CAST(telegram_id AS TEXT) = $1 OR phone ILIKE $2 ORDER BY id LIMIT 1`,
+      `SELECT * FROM clients WHERE CAST(telegram_id AS TEXT) = $1 OR phone ILIKE $2 OR username ILIKE $2 ORDER BY id LIMIT 1`,
       [q, `%${q}%`]
     );
     if (!rows.length) {

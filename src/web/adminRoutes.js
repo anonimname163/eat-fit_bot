@@ -145,21 +145,43 @@ function buildAdminRouter(bot) {
     } catch (err) { fail(res, err, 'DELETE /admin/menu/:id'); }
   });
 
+  // Загрузка фото блюда: принимаем бинарь изображения, отправляем в Telegram
+  // (в личку загрузившего админа) и возвращаем file_id для сохранения в блюде.
+  router.post('/upload', express.raw({ type: ['image/*', 'application/octet-stream'], limit: '10mb' }), async (req, res) => {
+    try {
+      if (!req.body || !req.body.length) return res.status(400).json({ error: 'no_file' });
+      const target = req.tgUser.id; // личный чат админа с ботом
+      const contentType = req.get('Content-Type') || 'image/jpeg';
+      const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+      const sent = await bot.sendPhoto(
+        target,
+        req.body,
+        { caption: '📸 Фото для меню' },
+        { filename: `dish.${ext}`, contentType }
+      );
+      const photos = sent.photo || [];
+      const fileId = photos.length ? photos[photos.length - 1].file_id : null;
+      if (!fileId) return res.status(500).json({ error: 'upload_failed' });
+      res.json({ file_id: fileId });
+    } catch (err) { fail(res, err, 'POST /admin/upload'); }
+  });
+
   // ---------------- Пользователи ----------------
   router.get('/users', async (req, res) => {
     try {
       const q = String(req.query.q || '').trim().replace(/^@/, '');
       if (!q) return res.json([]);
       const { rows } = await db.query(
-        `SELECT id, telegram_id, first_name, last_name, phone, balance, role
+        `SELECT id, telegram_id, first_name, last_name, username, phone, balance, role
            FROM clients
-          WHERE phone ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
+          WHERE phone ILIKE $1 OR username ILIKE $1 OR CAST(telegram_id AS TEXT) = $2
           ORDER BY id LIMIT 10`,
         [`%${q}%`, q]
       );
       res.json(rows.map((u) => ({
         id: u.id, telegram_id: String(u.telegram_id),
         name: `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+        username: u.username || null,
         phone: u.phone, balance: Number(u.balance), role: u.role,
       })));
     } catch (err) { fail(res, err, 'GET /admin/users'); }

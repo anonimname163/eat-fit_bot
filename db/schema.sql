@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS clients (
   telegram_id BIGINT UNIQUE NOT NULL,
   first_name  VARCHAR(100),
   last_name   VARCHAR(100),
+  username    VARCHAR(64),                     -- Telegram @username (без @), для поиска
   phone       VARCHAR(20),
   address     TEXT,
   language    VARCHAR(5)     DEFAULT 'ru',     -- 'ru' или 'uz'
@@ -15,6 +16,9 @@ CREATE TABLE IF NOT EXISTS clients (
   role        VARCHAR(20)    DEFAULT 'client', -- 'client' | 'admin' | 'cook' | 'courier'
   created_at  TIMESTAMP      DEFAULT NOW()
 );
+
+-- Для уже существующих БД добавляем недостающую колонку
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS username VARCHAR(64);
 
 -- Меню
 CREATE TABLE IF NOT EXISTS menu_items (

@@ -40,16 +40,23 @@ async function handleStart(bot, msg, order) {
   // Новый пользователь — создаём заготовку и спрашиваем язык
   if (!client) {
     await db.query(
-      `INSERT INTO clients (telegram_id, first_name, role)
-       VALUES ($1, $2, 'client')
+      `INSERT INTO clients (telegram_id, first_name, username, role)
+       VALUES ($1, $2, $3, 'client')
        ON CONFLICT (telegram_id) DO NOTHING`,
-      [telegramId, msg.from.first_name || null]
+      [telegramId, msg.from.first_name || null, msg.from.username || null]
     );
     client = await getClient(telegramId);
   }
 
   await syncAdminRole(telegramId);
   client = await getClient(telegramId);
+
+  // Держим @username актуальным (для поиска в админке)
+  const uname = msg.from.username || null;
+  if (client && client.username !== uname) {
+    await db.query('UPDATE clients SET username = $1 WHERE telegram_id = $2', [uname, telegramId]);
+    client.username = uname;
+  }
 
   // Если регистрация не завершена — запускаем диалог регистрации
   if (!isRegistered(client)) {

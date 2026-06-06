@@ -72,10 +72,10 @@ function requireTelegram(botToken) {
       let client = await getClient(tgId);
       if (!client) {
         await db.query(
-          `INSERT INTO clients (telegram_id, first_name, role)
-           VALUES ($1, $2, 'client')
+          `INSERT INTO clients (telegram_id, first_name, username, role)
+           VALUES ($1, $2, $3, 'client')
            ON CONFLICT (telegram_id) DO NOTHING`,
-          [tgId, verified.user.first_name || null]
+          [tgId, verified.user.first_name || null, verified.user.username || null]
         );
         client = await getClient(tgId);
       }
@@ -83,6 +83,12 @@ function requireTelegram(botToken) {
       if (isEnvAdmin(tgId) && client && client.role !== 'admin') {
         await syncAdminRole(tgId);
         client = await getClient(tgId);
+      }
+      // Держим @username актуальным (для поиска в админке)
+      const uname = verified.user.username || null;
+      if (client && client.username !== uname) {
+        await db.query('UPDATE clients SET username = $1 WHERE telegram_id = $2', [uname, tgId]);
+        client.username = uname;
       }
 
       req.tgUser = verified.user;
