@@ -80,6 +80,32 @@ function buildRouter(bot) {
     }
   });
 
+  // Фото блюда: отдаём по id. photo_url может быть как обычным URL,
+  // так и Telegram file_id — во втором случае резолвим через Bot API и
+  // проксируем байты (токен не утекает клиенту).
+  router.get('/menu/:id/photo', async (req, res) => {
+    try {
+      const { rows } = await db.query('SELECT photo_url FROM menu_items WHERE id = $1', [Number(req.params.id)]);
+      if (!rows.length || !rows[0].photo_url) return res.status(404).end();
+      const p = rows[0].photo_url;
+
+      if (/^https?:\/\//i.test(p)) return res.redirect(302, p);
+
+      // Иначе считаем, что это Telegram file_id
+      const file = await bot.getFile(p);
+      const url = `https://api.telegram.org/file/bot${botToken}/${file.file_path}`;
+      const tgRes = await fetch(url);
+      if (!tgRes.ok) return res.status(404).end();
+      const buf = Buffer.from(await tgRes.arrayBuffer());
+      res.set('Content-Type', tgRes.headers.get('content-type') || 'image/jpeg');
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(buf);
+    } catch (err) {
+      console.error('[ERROR] GET /menu/:id/photo:', err.message);
+      res.status(404).end();
+    }
+  });
+
   // ---- Авторизованные эндпоинты (нужен валидный initData) ----
 
   // Профиль + баланс (+ флаги registered/is_admin). Доступно и до регистрации.

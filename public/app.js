@@ -96,6 +96,7 @@
     config: null,      // публичная конфигурация
     payFromBalance: false,
     comment: '',
+    theme: 'auto',                   // auto | light | dark
     adminSection: 'orders',          // активный раздел админки
     admin: { ordersFilter: 'active', users: [], editDish: null }, // временные данные админки
   };
@@ -180,7 +181,7 @@
       items.forEach(function (it) {
         var qty = state.cart[it.id] || 0;
         var photo = it.photo_url
-          ? '<img class="dish-photo" src="' + esc(it.photo_url) + '" alt="" onerror="this.classList.add(\'placeholder\');this.removeAttribute(\'src\');this.textContent=\'🍽\'" />'
+          ? '<img class="dish-photo" loading="lazy" src="/api/menu/' + it.id + '/photo" alt="" onerror="this.outerHTML=\'<div class=\\\'dish-photo placeholder\\\'>🍽</div>\'" />'
           : '<div class="dish-photo placeholder">🍽</div>';
         var desc = dishDesc(it) ? '<p class="dish-desc">' + esc(dishDesc(it)) + '</p>' : '';
         var control = qty > 0
@@ -442,10 +443,14 @@
 
   function admDishCard(d) {
     var dot = d.is_active ? '🟢' : '🔴';
+    var thumb = d.photo_url
+      ? '<img class="dish-photo" style="width:46px;height:46px" loading="lazy" src="/api/menu/' + d.id + '/photo" alt="" onerror="this.outerHTML=\'<div class=\\\'dish-photo placeholder\\\' style=\\\'width:46px;height:46px;font-size:20px\\\'>🍽</div>\'" />'
+      : '<div class="dish-photo placeholder" style="width:46px;height:46px;font-size:20px">🍽</div>';
     return '<div class="card" style="padding:12px">' +
-      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:center">' +
+      '<div style="display:flex;gap:10px;align-items:center">' + thumb +
+      '<div style="flex:1;display:flex;justify-content:space-between;gap:8px;align-items:center">' +
       '<b>' + dot + ' ' + esc(state.lang === 'uz' ? d.name_uz || d.name_ru : d.name_ru) + '</b>' +
-      '<span class="dish-price">' + money(d.price) + ' ' + esc(t('currency')) + '</span></div>' +
+      '<span class="dish-price">' + money(d.price) + ' ' + esc(t('currency')) + '</span></div></div>' +
       '<div class="order-items">' + esc(t('cat_' + d.category)) + '</div>' +
       '<div class="chips">' +
         '<button class="chip" data-edit="' + d.id + '">✏️ ' + esc(t('adm_edit')) + '</button>' +
@@ -731,6 +736,34 @@
     if (persist && inTelegram) api('PUT', '/me', { language: lang }).catch(function () {});
   }
 
+  // ---------------- Тема ----------------
+  var THEME_ORDER = ['auto', 'light', 'dark'];
+  var THEME_ICON = { auto: '🌗', light: '☀️', dark: '🌙' };
+
+  function applyTheme(mode) {
+    if (THEME_ORDER.indexOf(mode) === -1) mode = 'auto';
+    state.theme = mode;
+    if (mode === 'auto') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', mode);
+    var btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = THEME_ICON[mode];
+    try { localStorage.setItem('eatfit_theme', mode); } catch (e) {}
+  }
+
+  function cycleTheme() {
+    var i = THEME_ORDER.indexOf(state.theme || 'auto');
+    applyTheme(THEME_ORDER[(i + 1) % THEME_ORDER.length]);
+    haptic('light');
+  }
+
+  function initTheme() {
+    var saved = 'auto';
+    try { saved = localStorage.getItem('eatfit_theme') || 'auto'; } catch (e) {}
+    applyTheme(saved);
+    var btn = document.getElementById('themeBtn');
+    if (btn) btn.onclick = cycleTheme;
+  }
+
   // ---------------- Init ----------------
   function init() {
     // язык: из Telegram пользователя, иначе ru
@@ -738,6 +771,7 @@
     state.lang = tgLang === 'uz' ? 'uz' : 'ru';
 
     document.getElementById('langBtn').onclick = function () { setLang(state.lang === 'ru' ? 'uz' : 'ru', true); };
+    initTheme();
     document.querySelectorAll('.tab').forEach(function (el) {
       el.onclick = function () { setTab(el.getAttribute('data-tab')); };
     });
