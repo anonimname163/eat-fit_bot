@@ -166,3 +166,66 @@ html, body {
   min-width: 16px; height: 16px; border-radius: 999px; padding: 0 4px;
   display: flex; align-items: center; justify-content: center;
 }
+
+/* ============================================================
+   Адаптив
+   ============================================================ */
+
+/* Очень узкие экраны — компактнее карточки блюд */
+@media (max-width: 359px) {
+  body { font-size: 14px; }
+  .view { padding: 10px 8px 88px; }
+  .dish { gap: 10px; padding: 10px; }
+  .dish-photo { width: 60px; height: 60px; }
+  .step-btn { width: 30px; height: 30px; font-size: 18px; }
+  .brand { font-size: 16px; }
+}
+
+/* Планшеты и десктоп (режим сайта в браузере): центрируем «телефонную»
+   колонку и ограничиваем ширину фиксированных панелей по ней. */
+@media (min-width: 600px) {
+  body { background: #e9edf2; }
+
+  #app {
+    max-width: 480px;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 40px rgba(0, 0, 0, .08);
+  }
+
+  /* topbar — sticky внутри #app, ширину наследует от контейнера */
+  .topbar { border-radius: 0; }
+
+  /* tabbar фиксирован к окну — выравниваем его по центру под колонку */
+  .tabbar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+}
+
+/* Широкий десктоп — меню в две колонки, остальное остаётся колонкой */
+@media (min-width: 900px) {
+  #app { max-width: 720px; }
+  .tabbar { max-width: 720px; }
+
+  body.tab-menu .view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 12px;
+    align-items: start;
+  }
+  /* Заголовки категорий и баннер — на всю ширину сетки */
+  body.tab-menu .view > .section-title,
+  body.tab-menu .view > .banner,
+  body.tab-menu .view > .empty { grid-column: 1 / -1; }
+}
+
+/* Бережём анимации для пользователей с reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -114,6 +114,7 @@
   // ---------------- Render: tabs ----------------
   function setTab(tab) {
     state.tab = tab;
+    document.body.className = 'tab-' + tab; // для адаптивных стилей (@media)
     var tabs = document.querySelectorAll('.tab');
     tabs.forEach(function (el) { el.classList.toggle('active', el.getAttribute('data-tab') === tab); });
     render();
