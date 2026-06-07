@@ -14,12 +14,18 @@ export class MenuRepository extends TransactionalRepository<MenuItem> {
     super(txHost);
   }
 
-  /** Витрина: только активные, опционально по категории. */
-  findActive(category?: Category): Promise<MenuItem[]> {
-    return this.repo.find({
-      where: { isActive: true, ...(category ? { category } : {}) },
-      order: { category: 'ASC', createdAt: 'DESC' },
-    });
+  /**
+   * Витрина: только активные, опционально по категории и по дню недели (ISO 1..7).
+   * День учитывается, только если задан: показываем блюда без ограничения по дням
+   * (пустой массив) ИЛИ те, у кого день указан.
+   */
+  findActive(category?: Category, day?: number): Promise<MenuItem[]> {
+    const qb = this.repo
+      .createQueryBuilder('m')
+      .where('m.isActive = :active', { active: true });
+    if (category) qb.andWhere('m.category = :category', { category });
+    if (day) qb.andWhere('(cardinality(m.days) = 0 OR :day = ANY(m.days))', { day });
+    return qb.orderBy('m.category', 'ASC').addOrderBy('m.createdAt', 'DESC').getMany();
   }
 
   /** Полный список для админки. */

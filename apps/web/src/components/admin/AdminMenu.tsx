@@ -32,8 +32,10 @@ const STR_FIELDS: { key: 'nameRu' | 'nameUz' | 'descriptionRu' | 'descriptionUz'
   { key: 'photoUrl', label: 'adm_photo_url' },
 ];
 
+const DAY_KEYS: I18nKey[] = ['day_1', 'day_2', 'day_3', 'day_4', 'day_5', 'day_6', 'day_7'];
+
 function emptyForm(): DishBody {
-  return { category: Category.Main, nameRu: '', nameUz: '', descriptionRu: '', descriptionUz: '', price: 0, photoUrl: '' };
+  return { category: Category.Main, nameRu: '', nameUz: '', descriptionRu: '', descriptionUz: '', price: 0, photoUrl: '', days: [] };
 }
 
 export function AdminMenu() {
@@ -99,6 +101,7 @@ export function AdminMenu() {
       descriptionUz: it.descriptionUz ?? '',
       price: Number(it.price),
       photoUrl: '',
+      days: it.days ?? [],
     });
     setHasPhoto(it.hasPhoto);
     setEditing(it);
@@ -133,6 +136,7 @@ export function AdminMenu() {
       photoUrl: form.photoUrl || undefined,
       descriptionRu: form.descriptionRu || undefined,
       descriptionUz: form.descriptionUz || undefined,
+      days: (form.days ?? []).slice().sort((a, b) => a - b),
     };
     if (editing) update.mutate({ id: editing.id, body }, { onSuccess: close });
     else create.mutate(body, { onSuccess: close });
@@ -173,6 +177,31 @@ export function AdminMenu() {
             value={form.price || ''}
             onChange={(e) => setForm({ ...form, price: Number(e.target.value) || 0 })}
           />
+        </div>
+        <div className="field">
+          <label>{t('adm_days')}</label>
+          <div className="seg">
+            {DAY_KEYS.map((key, i) => {
+              const day = i + 1;
+              const on = (form.days ?? []).includes(day);
+              return (
+                <button
+                  key={day}
+                  className={on ? 'active' : ''}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      days: on
+                        ? (form.days ?? []).filter((d) => d !== day)
+                        : [...(form.days ?? []), day],
+                    })
+                  }
+                >
+                  {t(key)}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="field">
           <label>{t('adm_photo')}</label>
@@ -255,6 +284,16 @@ export function AdminMenu() {
           <div className="dish-desc">
             {formatMoney(it.price)} {t('currency')}
           </div>
+          {it.days?.length > 0 && (
+            <div className="dish-desc">
+              📅{' '}
+              {it.days
+                .slice()
+                .sort((a, b) => a - b)
+                .map((d) => t(DAY_KEYS[d - 1]))
+                .join(', ')}
+            </div>
+          )}
           <div className="seg" style={{ marginTop: 8 }}>
             <button className="btn" onClick={() => openEdit(it)}>
               {t('adm_edit')}

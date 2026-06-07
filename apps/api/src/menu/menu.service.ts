@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Category } from '@eatfit/shared';
 import { NotFoundError } from '../common/errors/domain-error';
 import { Money } from '../common/money/money';
+import { currentIsoWeekday } from '../common/time/weekday';
 import { MenuRepository } from './menu.repository';
 import { MenuItem } from './entities/menu-item.entity';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
@@ -10,11 +12,20 @@ import { MenuItemResponseDto } from './dto/menu-item-response.dto';
 
 @Injectable()
 export class MenuService {
-  constructor(private readonly repo: MenuRepository) {}
+  constructor(
+    private readonly repo: MenuRepository,
+    private readonly config: ConfigService,
+  ) {}
 
   async showcase(category?: Category): Promise<MenuItemResponseDto[]> {
-    const items = await this.repo.findActive(category);
+    // Витрина — только блюда на сегодняшний день недели (по локальному TZ).
+    const items = await this.repo.findActive(category, this.currentIsoWeekday());
     return items.map((i) => new MenuItemResponseDto(i));
+  }
+
+  /** Текущий день недели ISO (1=Пн…7=Вс) с учётом часового пояса приложения. */
+  private currentIsoWeekday(): number {
+    return currentIsoWeekday(this.config.get<number>('reports.tzOffsetHours') ?? 5);
   }
 
   async listAll(): Promise<MenuItemResponseDto[]> {
@@ -43,6 +54,7 @@ export class MenuService {
       photoFileId: dto.photoFileId ?? null,
       photoUrl: dto.photoUrl ?? null,
       isActive: dto.isActive ?? true,
+      days: dto.days ?? [],
     });
     return new MenuItemResponseDto(item);
   }
@@ -58,6 +70,7 @@ export class MenuService {
     if (dto.photoFileId !== undefined) item.photoFileId = dto.photoFileId;
     if (dto.photoUrl !== undefined) item.photoUrl = dto.photoUrl;
     if (dto.isActive !== undefined) item.isActive = dto.isActive;
+    if (dto.days !== undefined) item.days = dto.days;
     return new MenuItemResponseDto(await this.repo.save(item));
   }
 

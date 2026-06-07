@@ -15,6 +15,7 @@ export class MenuItemResponseDto {
   price: string;
   hasPhoto: boolean;
   isActive: boolean;
+  days: number[];
   createdAt: Date;
 
   constructor(item: MenuItem) {
@@ -27,6 +28,7 @@ export class MenuItemResponseDto {
     this.price = item.price.toString();
     this.hasPhoto = Boolean(item.photoFileId || item.photoUrl || item.photoMime);
     this.isActive = item.isActive;
+    this.days = item.days ?? [];
     this.createdAt = item.createdAt;
   }
 }

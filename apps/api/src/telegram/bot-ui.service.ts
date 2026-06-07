@@ -5,6 +5,7 @@ import type { Context } from 'telegraf';
 import { Client } from '../clients/entities/client.entity';
 import { MenuItem } from '../menu/entities/menu-item.entity';
 import { MenuRepository } from '../menu/menu.repository';
+import { currentIsoWeekday } from '../common/time/weekday';
 import { CartService } from '../orders/cart/cart.service';
 import { BotStateService } from './bot-state.service';
 import { Lang, t, categoryName, pick, formatMoney, esc } from './i18n/bot-i18n';
@@ -20,6 +21,7 @@ export class BotUiService {
   private readonly logger = new Logger(BotUiService.name);
   private readonly adminIds: string[];
   private readonly webAppUrl?: string;
+  private readonly tzOffsetHours: number;
 
   constructor(
     private readonly config: ConfigService,
@@ -29,6 +31,7 @@ export class BotUiService {
   ) {
     this.adminIds = this.config.get<string[]>('telegram.adminIds') ?? [];
     this.webAppUrl = this.config.get<string>('bot.webAppUrl');
+    this.tzOffsetHours = this.config.get<number>('reports.tzOffsetHours') ?? 5;
   }
 
   isAdmin(client: Client): boolean {
@@ -61,7 +64,8 @@ export class BotUiService {
   /** Витрина: карточки с фото и степпером + кнопка оформления. Запоминает id сообщений. */
   async renderMenu(ctx: Context, client: Client): Promise<void> {
     const lang = this.langOf(client);
-    const items = await this.menu.findActive();
+    // Витрина бота — только блюда на сегодняшний день недели (как и на сайте).
+    const items = await this.menu.findActive(undefined, currentIsoWeekday(this.tzOffsetHours));
     if (!items.length) {
       await ctx.reply(t(lang, 'menu_empty'));
       return;

@@ -12,6 +12,7 @@ export interface DishBody {
   price: number;
   photoUrl?: string;
   isActive?: boolean;
+  days?: number[];
 }
 
 /* ── заказы ── */

@@ -43,4 +43,8 @@ export class MenuItem extends BaseEntity {
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
+
+  // Дни недели (ISO: 1=Пн … 7=Вс), когда блюдо показывается в витрине. Пусто = каждый день.
+  @Column({ type: 'int', array: true, default: () => "'{}'" })
+  days!: number[];
 }

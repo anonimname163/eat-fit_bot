@@ -25,6 +25,7 @@ export interface MenuItemDto {
   price: string;
   hasPhoto: boolean;
   isActive: boolean;
+  days: number[];
   createdAt: string;
 }
 
