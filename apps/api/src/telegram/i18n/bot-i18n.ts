@@ -110,6 +110,7 @@ const dict = {
   btn_drinks: { ru: 'Напитки 🥤', uz: 'Ichimliklar 🥤' },
   btn_desserts: { ru: 'Десерты 🍰', uz: 'Shirinliklar 🍰' },
   btn_checkout: { ru: '✅ Оформить заказ', uz: '✅ Buyurtmani rasmiylashtirish' },
+  checkout_prompt: { ru: 'Когда всё выбрали — оформите заказ:', uz: 'Hammasini tanlab bo‘lgach — buyurtma bering:' },
   cart_title: { ru: '🛒 Ваша корзина', uz: '🛒 Sizning savatingiz' },
   cart_empty: { ru: 'Корзина пуста.', uz: 'Savat bo‘sh.' },
   cart_total: { ru: 'Итого', uz: 'Jami' },
