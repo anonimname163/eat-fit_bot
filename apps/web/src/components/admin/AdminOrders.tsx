@@ -15,6 +15,10 @@ const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; key: I18nKey; pri
     { status: OrderStatus.Cancelled, key: 'act_cancel' },
   ],
   [OrderStatus.Cooking]: [
+    { status: OrderStatus.Ready, key: 'act_ready', primary: true },
+    { status: OrderStatus.Cancelled, key: 'act_cancel' },
+  ],
+  [OrderStatus.Ready]: [
     { status: OrderStatus.Delivering, key: 'act_deliver', primary: true },
     { status: OrderStatus.Cancelled, key: 'act_cancel' },
   ],

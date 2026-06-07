@@ -26,7 +26,7 @@ import {
   formatMoney,
   statusText,
 } from '../i18n/bot-i18n';
-import { languageKeyboard, shareContactKeyboard } from '../telegram-keyboards';
+import { languageKeyboard, shareContactKeyboard, stepperRow } from '../telegram-keyboards';
 
 /**
  * Клиентские флоу бота (FR-B1/B2, FR-C, FR-M2, FR-O1/O8): /start + deep link, регистрация
@@ -124,7 +124,7 @@ export class ClientUpdate {
   @Command('menu')
   async onMenuCommand(@Ctx() ctx: Context): Promise<void> {
     const client = await this.requireRegistered(ctx);
-    if (client) await this.ui.sendMenu(ctx, client);
+    if (client) await this.ui.renderMenu(ctx, client);
   }
 
   @Command('profile')
@@ -155,13 +155,14 @@ export class ClientUpdate {
       await ctx.answerCbQuery();
       if (next === qty) return; // ➖ на нуле — без изменений
       await this.cart.setQuantity(itemId, next);
-      await this.ui.editMenu(ctx, client); // перерисовать витрину в этом же сообщении
+      // обновляем степпер этой карточки на месте (без новых сообщений)
+      await ctx.editMessageReplyMarkup({ inline_keyboard: [stepperRow(lang, itemId, next)] });
     } catch (err) {
       await ctx.answerCbQuery(this.errText(err, lang));
     }
   }
 
-  // ──────────────────── оформление заказа (edit-in-place) ────────────────────
+  // ──────────────────── оформление заказа ────────────────────
 
   @Action('cart:checkout')
   async onCheckout(@Ctx() ctx: Context): Promise<void> {
@@ -171,7 +172,7 @@ export class ClientUpdate {
     const lang = this.ui.langOf(client);
     const cart = await this.cart.getCart();
     if (!cart.items.length) {
-      await this.ui.editMenu(ctx, client);
+      await ctx.reply(t(lang, 'cart_empty'));
       return;
     }
     if (!client.address) {
@@ -179,20 +180,29 @@ export class ClientUpdate {
       await ctx.reply(t(lang, 'ask_address'));
       return;
     }
+    await this.ui.deleteMenu(ctx, client.telegramId!); // витрина исчезает
     const balance = Number(client.balance.toString());
     const total = Number(cart.total);
     const rows: InlineKeyboardButton[][] = [];
     if (balance >= total) rows.push([{ text: t(lang, 'btn_pay_balance'), callback_data: 'checkout:pay:balance' }]);
     rows.push([{ text: t(lang, 'btn_pay_cash'), callback_data: 'checkout:pay:cash' }]);
     rows.push([{ text: t(lang, 'btn_cancel'), callback_data: 'checkout:cancel' }]);
-    await this.editOrReply(ctx, this.cartSummary(lang, cart, client.address), { inline_keyboard: rows });
+    await ctx.reply(this.cartSummary(lang, cart, client.address), {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: rows },
+    });
   }
 
   @Action('checkout:cancel')
   async onCheckoutCancel(@Ctx() ctx: Context): Promise<void> {
     await ctx.answerCbQuery();
+    try {
+      await ctx.deleteMessage();
+    } catch {
+      /* игнор */
+    }
     const client = await this.clients.findByTelegramId(String(ctx.from?.id));
-    if (client) await this.ui.editMenu(ctx, client);
+    if (client) await this.ui.renderMenu(ctx, client);
   }
 
   @Action(/^checkout:pay:(balance|cash)$/)
@@ -348,7 +358,7 @@ export class ClientUpdate {
 
     switch (action) {
       case 'make_order':
-        return this.ui.sendMenu(ctx, client);
+        return this.ui.renderMenu(ctx, client);
       case 'my_orders':
         return this.showMyOrders(ctx, client);
       case 'profile':
@@ -632,7 +642,7 @@ export class ClientUpdate {
       await ctx.reply(this.errText(err, lang));
       return;
     }
-    await this.ui.sendMenu(ctx, client);
+    await this.ui.renderMenu(ctx, client);
   }
 
   /** Редактировать текущее сообщение (по callback) или отправить новое — для edit-in-place. */

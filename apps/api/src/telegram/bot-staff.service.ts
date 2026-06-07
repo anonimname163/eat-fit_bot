@@ -37,7 +37,7 @@ export class BotStaffService {
     await this.renderOrders(
       ctx,
       client,
-      [OrderStatus.Cooking, OrderStatus.Delivering],
+      [OrderStatus.Ready, OrderStatus.Delivering],
       'courier_panel_title',
       'courier_no_orders',
     );
@@ -62,7 +62,13 @@ export class BotStaffService {
     await this.renderOrders(
       ctx,
       client,
-      [OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.Cooking, OrderStatus.Delivering],
+      [
+        OrderStatus.Pending,
+        OrderStatus.Confirmed,
+        OrderStatus.Cooking,
+        OrderStatus.Ready,
+        OrderStatus.Delivering,
+      ],
       'admin_orders',
       'cook_no_orders',
     );

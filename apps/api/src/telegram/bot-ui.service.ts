@@ -1,21 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Category, Language, Role } from '@eatfit/shared';
 import type { Context } from 'telegraf';
-import { InlineKeyboardButton } from 'telegraf/typings/core/types/typegram';
 import { Client } from '../clients/entities/client.entity';
+import { MenuItem } from '../menu/entities/menu-item.entity';
 import { MenuRepository } from '../menu/menu.repository';
 import { CartService } from '../orders/cart/cart.service';
+import { BotStateService } from './bot-state.service';
 import { Lang, t, categoryName, pick, formatMoney, esc } from './i18n/bot-i18n';
-import { mainMenuKeyboard } from './telegram-keyboards';
+import { mainMenuKeyboard, stepperRow } from './telegram-keyboards';
 
 /**
- * Презентационный слой бота. Витрина — ОДНО редактируемое сообщение (edit-in-place):
- * степперы ➖/➕ меняют его на месте, «Оформить заказ» редактирует его же в оплату —
- * новые сообщения не плодятся, меню «исчезает» при оформлении.
+ * Презентационный слой бота. Витрина — карточки блюд (фото + степпер); количество правится
+ * на месте (editMessageReplyMarkup), id всех сообщений запоминаются, чтобы удалить витрину
+ * при оформлении («меню исчезает»). Конец витрины — кнопка «Оформить заказ».
  */
 @Injectable()
 export class BotUiService {
+  private readonly logger = new Logger(BotUiService.name);
   private readonly adminIds: string[];
   private readonly webAppUrl?: string;
 
@@ -23,12 +25,12 @@ export class BotUiService {
     private readonly config: ConfigService,
     private readonly menu: MenuRepository,
     private readonly cart: CartService,
+    private readonly state: BotStateService,
   ) {
     this.adminIds = this.config.get<string[]>('telegram.adminIds') ?? [];
     this.webAppUrl = this.config.get<string>('bot.webAppUrl');
   }
 
-  /** Админ — по списку ADMIN_TELEGRAM_IDS или роли в БД (паритет + домен). */
   isAdmin(client: Client): boolean {
     return this.adminIds.includes(String(client.telegramId)) || client.role === Role.Admin;
   }
@@ -45,62 +47,99 @@ export class BotUiService {
     );
   }
 
-  /** Текст + клавиатура витрины (общее для отправки и редактирования). */
-  async buildMenuView(client: Client): Promise<{ text: string; reply_markup: { inline_keyboard: InlineKeyboardButton[][] } }> {
+  private async cartQuantities(): Promise<Map<string, number>> {
+    const map = new Map<string, number>();
+    try {
+      const cart = await this.cart.getCart();
+      for (const it of cart.items) map.set(it.menuItemId, it.quantity);
+    } catch {
+      /* actor не установлен — 0 */
+    }
+    return map;
+  }
+
+  /** Витрина: карточки с фото и степпером + кнопка оформления. Запоминает id сообщений. */
+  async renderMenu(ctx: Context, client: Client): Promise<void> {
     const lang = this.langOf(client);
     const items = await this.menu.findActive();
-    let cart: { items: { menuItemId: string; quantity: number }[]; total: string };
-    try {
-      cart = await this.cart.getCart();
-    } catch {
-      cart = { items: [], total: '0' };
+    if (!items.length) {
+      await ctx.reply(t(lang, 'menu_empty'));
+      return;
     }
-    const qty = new Map(cart.items.map((i) => [i.menuItemId, i.quantity]));
+    const ids: number[] = [];
+    const title = await ctx.reply(`🍽 <b>${esc(t(lang, 'menu_title'))}</b>`, { parse_mode: 'HTML' });
+    ids.push(title.message_id);
 
-    const lines = [`🍽 <b>${esc(t(lang, 'menu_title'))}</b>`];
-    const kb: InlineKeyboardButton[][] = [];
+    const quantities = await this.cartQuantities();
     const categories: Category[] = [Category.Main, Category.Drink, Category.Dessert];
     for (const cat of categories) {
       const catItems = items.filter((i) => i.category === cat);
       if (!catItems.length) continue;
-      kb.push([{ text: `— ${categoryName(lang, cat)} —`, callback_data: 'qty:noop' }]);
+      const head = await ctx.reply(`<b>${esc(categoryName(lang, cat))}</b>`, { parse_mode: 'HTML' });
+      ids.push(head.message_id);
       for (const item of catItems) {
-        const q = qty.get(item.id) ?? 0;
-        const name = pick(lang, item.nameRu, item.nameUz);
-        const price = formatMoney(item.price.toString());
-        kb.push([
-          { text: '➖', callback_data: `qty:dec:${item.id}` },
-          { text: `${name} · ${price}${q ? ` ·${q}` : ''}`, callback_data: 'qty:noop' },
-          { text: '➕', callback_data: `qty:inc:${item.id}` },
-        ]);
+        const id = await this.sendDishCard(ctx, lang, item, quantities.get(item.id) ?? 0);
+        if (id) ids.push(id);
       }
     }
+    const prompt = await ctx.reply(t(lang, 'checkout_prompt'), {
+      reply_markup: { inline_keyboard: [[{ text: t(lang, 'btn_checkout'), callback_data: 'cart:checkout' }]] },
+    });
+    ids.push(prompt.message_id);
 
-    if (!items.length) {
-      lines.push('', esc(t(lang, 'menu_empty')));
-    } else if (Number(cart.total) > 0) {
-      lines.push('', `🛒 <b>${esc(t(lang, 'cart_total'))}: ${esc(formatMoney(cart.total))} ${esc(t(lang, 'currency'))}</b>`);
-      kb.push([{ text: t(lang, 'btn_checkout'), callback_data: 'cart:checkout' }]);
-    } else {
-      lines.push('', esc(t(lang, 'add_something_else')));
+    if (client.telegramId) this.state.setMenuMessages(client.telegramId, ids);
+  }
+
+  /** Карточка блюда: фото (file_id/url) или текст + ряд-степпер. Возвращает message_id. */
+  async sendDishCard(ctx: Context, lang: Lang, item: MenuItem, qty: number): Promise<number | undefined> {
+    const name = pick(lang, item.nameRu, item.nameUz);
+    const desc = pick(lang, item.descriptionRu, item.descriptionUz);
+    const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
+    let text = `🍽 <b>${esc(name)}</b>\n`;
+    if (desc) text += `${esc(desc)}\n`;
+    text += `💵 ${esc(price)}`;
+
+    const markup = { reply_markup: { inline_keyboard: [stepperRow(lang, item.id, qty)] } };
+    const photo = item.photoFileId || item.photoUrl;
+    if (photo) {
+      try {
+        const msg = await ctx.replyWithPhoto(photo, { caption: text, parse_mode: 'HTML', ...markup });
+        return msg.message_id;
+      } catch (err) {
+        this.logger.warn(`sendPhoto блюдо ${item.id}: ${(err as Error).message}`);
+        await this.clearInvalidPhoto(item, (err as Error).message);
+      }
     }
-
-    return { text: lines.join('\n'), reply_markup: { inline_keyboard: kb } };
+    const msg = await ctx.reply(text, { parse_mode: 'HTML', ...markup });
+    return msg.message_id;
   }
 
-  /** Отправить новое сообщение витрины. */
-  async sendMenu(ctx: Context, client: Client): Promise<void> {
-    const view = await this.buildMenuView(client);
-    await ctx.reply(view.text, { parse_mode: 'HTML', reply_markup: view.reply_markup });
+  /** Удалить сообщения витрины (карточки + промпт) — при оформлении меню «исчезает». */
+  async deleteMenu(ctx: Context, telegramId: string): Promise<void> {
+    const ids = this.state.getMenuMessages(telegramId);
+    const chatId = ctx.chat?.id;
+    if (chatId) {
+      for (const id of ids) {
+        try {
+          await ctx.telegram.deleteMessage(chatId, id);
+        } catch {
+          /* старше 48ч / уже удалено — игнор */
+        }
+      }
+    }
+    this.state.clearMenuMessages(telegramId);
   }
 
-  /** Перерисовать витрину в текущем сообщении (по callback). */
-  async editMenu(ctx: Context, client: Client): Promise<void> {
-    const view = await this.buildMenuView(client);
-    try {
-      await ctx.editMessageText(view.text, { parse_mode: 'HTML', reply_markup: view.reply_markup });
-    } catch {
-      /* «not modified» / сообщение устарело — игнор */
+  /** Сбрасываем битый file_id/url, чтобы ошибка не повторялась. */
+  private async clearInvalidPhoto(item: MenuItem, errMsg: string): Promise<void> {
+    if (/wrong file identifier|HTTP URL|PHOTO_INVALID|wrong remote file|file_id/i.test(errMsg)) {
+      try {
+        item.photoFileId = null;
+        item.photoUrl = null;
+        await this.menu.save(item);
+      } catch {
+        /* не критично */
+      }
     }
   }
 }

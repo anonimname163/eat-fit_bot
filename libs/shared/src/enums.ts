@@ -11,6 +11,7 @@ export enum OrderStatus {
   Pending = 'pending',
   Confirmed = 'confirmed',
   Cooking = 'cooking',
+  Ready = 'ready', // приготовлено, ожидает курьера
   Delivering = 'delivering',
   Done = 'done',
   Cancelled = 'cancelled',

@@ -17,8 +17,10 @@ const TRANSITIONS: Transition[] = [
   { from: OrderStatus.Pending, to: OrderStatus.Cancelled, roles: [Role.Admin] },
   { from: OrderStatus.Confirmed, to: OrderStatus.Cooking, roles: [Role.Admin, Role.Cook] },
   { from: OrderStatus.Confirmed, to: OrderStatus.Cancelled, roles: [Role.Admin] },
-  { from: OrderStatus.Cooking, to: OrderStatus.Delivering, roles: [Role.Admin, Role.Cook, Role.Courier] },
+  { from: OrderStatus.Cooking, to: OrderStatus.Ready, roles: [Role.Admin, Role.Cook] },
   { from: OrderStatus.Cooking, to: OrderStatus.Cancelled, roles: [Role.Admin] },
+  { from: OrderStatus.Ready, to: OrderStatus.Delivering, roles: [Role.Admin, Role.Courier] },
+  { from: OrderStatus.Ready, to: OrderStatus.Cancelled, roles: [Role.Admin] },
   { from: OrderStatus.Delivering, to: OrderStatus.Done, roles: [Role.Admin, Role.Courier] },
   { from: OrderStatus.Delivering, to: OrderStatus.Cancelled, roles: [Role.Admin] },
 ];

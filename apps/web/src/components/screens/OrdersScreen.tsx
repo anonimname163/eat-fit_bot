@@ -9,6 +9,7 @@ const STATUS_KEY: Record<OrderStatus, I18nKey> = {
   [OrderStatus.Pending]: 'status_pending',
   [OrderStatus.Confirmed]: 'status_confirmed',
   [OrderStatus.Cooking]: 'status_cooking',
+  [OrderStatus.Ready]: 'status_ready',
   [OrderStatus.Delivering]: 'status_delivering',
   [OrderStatus.Done]: 'status_done',
   [OrderStatus.Cancelled]: 'status_cancelled',

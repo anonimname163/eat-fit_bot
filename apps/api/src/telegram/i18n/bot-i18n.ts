@@ -145,6 +145,7 @@ const dict = {
   status_pending: { ru: 'Ожидает подтверждения', uz: 'Tasdiqlash kutilmoqda' },
   status_confirmed: { ru: 'Принят', uz: 'Qabul qilindi' },
   status_cooking: { ru: 'Готовится', uz: 'Tayyorlanmoqda' },
+  status_ready: { ru: 'Готово', uz: 'Tayyor' },
   status_delivering: { ru: 'Доставляется', uz: 'Yetkazilmoqda' },
   status_done: { ru: 'Доставлен', uz: 'Yetkazib berildi' },
   status_cancelled: { ru: 'Отменён', uz: 'Bekor qilindi' },

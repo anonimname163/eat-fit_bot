@@ -96,15 +96,16 @@ button {
 }
 .dish {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 8px;
 }
 .dish-photo {
-  width: 72px;
-  height: 72px;
+  width: 60%;
+  aspect-ratio: 4 / 3;
+  height: auto;
   border-radius: 10px;
   object-fit: cover;
   background: var(--secondary-bg);
-  flex-shrink: 0;
 }
 .dish-body {
   flex: 1;

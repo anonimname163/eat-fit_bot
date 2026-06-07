@@ -17,9 +17,23 @@ export interface BotSession {
 export class BotStateService {
   private readonly sessions = new Map<string, BotSession>();
   private readonly processedCallbacks = new Map<string, number>();
+  // id сообщений показанной витрины (карточки блюд + промпт) — удаляются при оформлении.
+  private readonly menuMessages = new Map<string, number[]>();
 
   private key(telegramId: string | number): string {
     return String(telegramId);
+  }
+
+  setMenuMessages(telegramId: string | number, ids: number[]): void {
+    this.menuMessages.set(this.key(telegramId), ids);
+  }
+
+  getMenuMessages(telegramId: string | number): number[] {
+    return this.menuMessages.get(this.key(telegramId)) ?? [];
+  }
+
+  clearMenuMessages(telegramId: string | number): void {
+    this.menuMessages.delete(this.key(telegramId));
   }
 
   getSession(telegramId: string | number): BotSession | null {
