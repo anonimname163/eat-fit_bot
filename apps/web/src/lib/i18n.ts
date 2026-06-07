@@ -94,7 +94,7 @@ const dict = {
   adm_category: { ru: 'Категория', uz: 'Kategoriya' },
   adm_price: { ru: 'Цена', uz: 'Narx' },
   adm_photo_url: { ru: 'URL фото (необязательно)', uz: 'Rasm URL (ixtiyoriy)' },
-  adm_days: { ru: 'Дни в меню (пусто = каждый день)', uz: 'Menyu kunlari (bo‘sh = har kuni)' },
+  adm_days: { ru: 'Дни показа основного блюда (без дней — не в меню; напитки/десерты — всегда)', uz: 'Asosiy taom kunlari (kunsiz — menyuda yo‘q; ichimlik/shirinlik — doim)' },
   day_1: { ru: 'Пн', uz: 'Du' },
   day_2: { ru: 'Вт', uz: 'Se' },
   day_3: { ru: 'Ср', uz: 'Cho' },
