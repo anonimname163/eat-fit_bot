@@ -7,7 +7,7 @@ import { Client } from '../entities/client.entity';
  */
 export class ClientResponseDto {
   id: string;
-  telegramId: string;
+  telegramId: string | null;
   name: string;
   username: string | null;
   phone: string | null;

@@ -212,12 +212,12 @@ export class ClientUpdate {
       return;
     }
     if (!client.address) {
-      this.state.setSession(client.telegramId, 'profile_edit', 'address');
+      this.state.setSession(client.telegramId!, 'profile_edit', 'address');
       await ctx.reply(t(lang, 'ask_address'));
       return;
     }
     await ctx.reply(this.cartSummary(lang, cart, client.address), { parse_mode: 'HTML' });
-    this.state.setSession(client.telegramId, 'checkout', 'comment', {});
+    this.state.setSession(client.telegramId!, 'checkout', 'comment', {});
     await ctx.reply(
       t(lang, 'ask_comment'),
       Markup.inlineKeyboard([[Markup.button.callback(t(lang, 'btn_no_comment'), 'checkout:nocomment')]]),
@@ -641,11 +641,11 @@ export class ClientUpdate {
     const lang = this.ui.langOf(client);
     const cart = await this.cart.getCart();
     if (!cart.items.length) {
-      this.state.clearSession(client.telegramId);
+      this.state.clearSession(client.telegramId!);
       await ctx.reply(t(lang, 'cart_empty'));
       return;
     }
-    this.state.setSession(client.telegramId, 'checkout', 'pay', { comment });
+    this.state.setSession(client.telegramId!, 'checkout', 'pay', { comment });
 
     const rows = [];
     if (Number(client.balance.toString()) >= Number(cart.total)) {

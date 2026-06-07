@@ -42,10 +42,12 @@ export class DepositsService {
     });
     const updated = await this.balance.deposit(target.id, amount);
 
-    await this.notifier?.notifyUser(
-      target.telegramId,
-      `Ваш баланс пополнен на ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
-    );
+    if (target.telegramId) {
+      await this.notifier?.notifyUser(
+        target.telegramId,
+        `Ваш баланс пополнен на ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
+      );
+    }
     await this.notifier?.notifyGroup(
       NotifyGroup.Admins,
       `Пополнение: ${target.name} (+${amount.toString()}). Баланс: ${updated.balance.toString()}.`,

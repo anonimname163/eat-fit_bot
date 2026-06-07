@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Transactional } from '@nestjs-cls/transactional';
 import { Language, Role } from '@eatfit/shared';
+import { ConflictError } from '../common/errors/domain-error';
 import { Money } from '../common/money/money';
 import { ClientRepository } from '../clients/clients.repository';
+import { Client } from '../clients/entities/client.entity';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 import { JwtPayload } from './jwt-payload';
+import { hashPassword, verifyPassword } from './password';
 import { verifyTelegramInitData } from './telegram-initdata';
 
 // initData валиден ограниченное время (анти-replay).
@@ -55,9 +60,42 @@ export class AuthService {
       }
     }
 
-    const payload: JwtPayload = { sub: client.id, telegramId, role: client.role };
-    const accessToken = await this.jwt.signAsync(payload);
+    return this.issue(client);
+  }
 
+  /** Регистрация веб-аккаунта (вне Telegram): телефон+пароль → клиент → JWT. */
+  @Transactional()
+  async register(dto: RegisterDto): Promise<AuthResponseDto> {
+    const existing = await this.clients.findWebByPhone(dto.phone);
+    if (existing) {
+      throw new ConflictError('Этот телефон уже зарегистрирован');
+    }
+    const client = await this.clients.create({
+      telegramId: null,
+      passwordHash: hashPassword(dto.password),
+      name: dto.name,
+      phone: dto.phone,
+      address: dto.address ?? null,
+      language: dto.language ?? Language.Ru,
+      role: Role.Client,
+      balance: Money.zero(),
+    });
+    return this.issue(client);
+  }
+
+  /** Вход веб-аккаунта: телефон+пароль. */
+  async login(dto: LoginDto): Promise<AuthResponseDto> {
+    const client = await this.clients.findWebByPhone(dto.phone);
+    if (!client?.passwordHash || !verifyPassword(dto.password, client.passwordHash)) {
+      throw new UnauthorizedException('Неверный телефон или пароль');
+    }
+    return this.issue(client);
+  }
+
+  private async issue(client: Client): Promise<AuthResponseDto> {
+    // У веб-аккаунта нет telegramId → '' (в токене поле строковое; домен берёт actor.userId).
+    const payload: JwtPayload = { sub: client.id, telegramId: client.telegramId ?? '', role: client.role };
+    const accessToken = await this.jwt.signAsync(payload);
     return new AuthResponseDto(accessToken, client);
   }
 }

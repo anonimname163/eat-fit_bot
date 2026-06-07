@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EntityTarget } from 'typeorm';
+import { EntityTarget, IsNull, Not } from 'typeorm';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { TransactionalRepository } from '../common/database/transactional-repository';
@@ -16,6 +16,11 @@ export class ClientRepository extends TransactionalRepository<Client> {
 
   findByTelegramId(telegramId: string): Promise<Client | null> {
     return this.repo.findOne({ where: { telegramId } });
+  }
+
+  /** Веб-аккаунт по телефону (только с паролем — Telegram-клиенты не участвуют). */
+  findWebByPhone(phone: string): Promise<Client | null> {
+    return this.repo.findOne({ where: { phone, passwordHash: Not(IsNull()) } });
   }
 
   findById(id: string): Promise<Client | null> {

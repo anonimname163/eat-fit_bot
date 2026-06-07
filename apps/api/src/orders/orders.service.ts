@@ -131,7 +131,7 @@ export class OrdersService {
     await this.orders.save(order);
 
     const client = await this.clients.findById(order.clientId);
-    if (client) {
+    if (client?.telegramId) {
       await this.notifier?.notifyUser(
         client.telegramId,
         `Статус вашего заказа #${order.id.slice(0, 8)}: ${to}.`,

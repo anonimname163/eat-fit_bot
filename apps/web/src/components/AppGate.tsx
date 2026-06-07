@@ -3,6 +3,7 @@
 import { useAuthStore } from '@/store/auth.store';
 import { bootstrapAuth } from '@/lib/auth';
 import { useT } from '@/lib/i18n';
+import { WebAuth } from './WebAuth';
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
@@ -30,7 +31,7 @@ export function AppGate({ children }: { children: React.ReactNode }) {
   const t = useT();
 
   if (status === 'idle' || status === 'loading') return <Center>{t('loading')}</Center>;
-  if (status === 'no-telegram') return <Center>{t('open_in_telegram')}</Center>;
+  if (status === 'web-anon') return <WebAuth />;
   if (status === 'error') {
     return (
       <Center>

@@ -60,6 +60,18 @@ const dict = {
   register_hint: { ru: 'Заполните профиль, чтобы заказывать', uz: 'Buyurtma berish uchun profilni to‘ldiring' },
   required: { ru: 'Обязательное поле', uz: 'Majburiy maydon' },
 
+  // ── вход/регистрация на сайте (вне Telegram) ──
+  web_welcome: { ru: 'Eat&fit — доставка еды', uz: 'Eat&fit — taom yetkazib berish' },
+  web_login: { ru: 'Вход', uz: 'Kirish' },
+  web_register: { ru: 'Регистрация', uz: 'Ro‘yxatdan o‘tish' },
+  web_password: { ru: 'Пароль', uz: 'Parol' },
+  web_password_hint: { ru: 'Минимум 6 символов', uz: 'Kamida 6 ta belgi' },
+  web_to_register: { ru: 'Нет аккаунта? Зарегистрироваться', uz: 'Hisob yo‘qmi? Ro‘yxatdan o‘tish' },
+  web_to_login: { ru: 'Уже есть аккаунт? Войти', uz: 'Hisob bormi? Kirish' },
+  web_auth_failed: { ru: 'Неверный телефон или пароль', uz: 'Telefon yoki parol noto‘g‘ri' },
+  web_register_failed: { ru: 'Не удалось зарегистрироваться (телефон может быть занят)', uz: 'Ro‘yxatdan o‘tib bo‘lmadi (telefon band bo‘lishi mumkin)' },
+  logout: { ru: 'Выйти', uz: 'Chiqish' },
+
   // ── админка ──
   adm_orders: { ru: 'Заказы', uz: 'Buyurtmalar' },
   adm_menu: { ru: 'Меню', uz: 'Menyu' },
