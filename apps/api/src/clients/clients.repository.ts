@@ -21,6 +21,27 @@ export class ClientRepository extends TransactionalRepository<Client> {
     return this.repo.findOne({ where: { id } });
   }
 
+  /** Загрузка клиента с блокировкой строки (для денежных операций; нужна транзакция). */
+  findByIdForUpdate(id: string): Promise<Client | null> {
+    return this.repo
+      .createQueryBuilder('client')
+      .setLock('pessimistic_write')
+      .where('client.id = :id', { id })
+      .getOne();
+  }
+
+  /** Поиск клиентов админом по телефону / @username / telegram_id (живой фильтр). */
+  search(term?: string): Promise<Client[]> {
+    const qb = this.repo.createQueryBuilder('client').orderBy('client.createdAt', 'DESC');
+    if (term && term.trim()) {
+      qb.where(
+        'client.phone ILIKE :t OR client.username ILIKE :t OR CAST(client.telegramId AS TEXT) ILIKE :t',
+        { t: `%${term.trim()}%` },
+      );
+    }
+    return qb.getMany();
+  }
+
   create(data: Partial<Client>): Promise<Client> {
     return this.repo.save(this.repo.create(data));
   }
