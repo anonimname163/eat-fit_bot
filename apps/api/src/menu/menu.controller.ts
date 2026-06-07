@@ -30,6 +30,18 @@ export class MenuController {
   @Get(':id/photo')
   async photoEndpoint(@Param('id', ParseUUIDPipe) id: string, @Res() res: Response): Promise<void> {
     const item = await this.menu.getEntityOrThrow(id);
+
+    // Загруженное в БД фото отдаём напрямую (Mini App/сайт).
+    if (item.photoMime) {
+      const bytes = await this.menu.loadPhotoBytes(id);
+      if (bytes) {
+        res.setHeader('Content-Type', bytes.mime);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.end(bytes.data);
+        return;
+      }
+    }
+
     const result = await this.photo.resolve(item);
     if (!result) {
       throw new NotFoundError('Фото не найдено');

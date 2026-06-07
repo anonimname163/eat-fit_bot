@@ -31,6 +31,17 @@ export class MenuRepository extends TransactionalRepository<MenuItem> {
     return this.repo.findOne({ where: { id } });
   }
 
+  /** Бинарь фото (колонка select:false) — грузим явно только при отдаче картинки. */
+  async findPhotoBytes(id: string): Promise<{ data: Buffer; mime: string } | null> {
+    const row = await this.repo
+      .createQueryBuilder('m')
+      .select(['m.photoData', 'm.photoMime'])
+      .where('m.id = :id', { id })
+      .getRawOne<{ m_photo_data: Buffer | null; m_photo_mime: string | null }>();
+    if (!row?.m_photo_data || !row.m_photo_mime) return null;
+    return { data: row.m_photo_data, mime: row.m_photo_mime };
+  }
+
   create(data: Partial<MenuItem>): Promise<MenuItem> {
     return this.repo.save(this.repo.create(data));
   }

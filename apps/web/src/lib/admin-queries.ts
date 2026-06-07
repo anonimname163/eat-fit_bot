@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Category, OrderStatus, Role } from '@eatfit/shared';
-import { api } from './api';
+import { api, apiUpload } from './api';
 import { ClientDto, MenuItemDto, OrderDto, SettingsDto } from './types';
 
 export interface DishBody {
@@ -67,6 +67,27 @@ export function useDeleteDish() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => api<void>(`/admin/menu/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+export function useUploadDishPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; file: File }) =>
+      apiUpload<MenuItemDto>(`/admin/menu/${v.id}/photo`, v.file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+export function useDeleteDishPhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<MenuItemDto>(`/admin/menu/${id}/photo`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
       qc.invalidateQueries({ queryKey: ['menu'] });

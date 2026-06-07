@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Category } from '@eatfit/shared';
 import {
   useAdminMenu,
@@ -8,6 +8,8 @@ import {
   useUpdateDish,
   useSetDishActive,
   useDeleteDish,
+  useUploadDishPhoto,
+  useDeleteDishPhoto,
   type DishBody,
 } from '@/lib/admin-queries';
 import { useT, type I18nKey } from '@/lib/i18n';
@@ -39,14 +41,21 @@ export function AdminMenu() {
   const update = useUpdateDish();
   const setActive = useSetDishActive();
   const del = useDeleteDish();
+  const uploadPhoto = useUploadDishPhoto();
+  const deletePhoto = useDeleteDishPhoto();
 
   // undefined — список; null — новое; объект — редактирование.
   const [editing, setEditing] = useState<MenuItemDto | null | undefined>(undefined);
   const [form, setForm] = useState<DishBody>(emptyForm());
+  // Версия фото — для сброса кэша <img> после загрузки/удаления.
+  const [photoVer, setPhotoVer] = useState(0);
+  const [hasPhoto, setHasPhoto] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const close = () => setEditing(undefined);
   const openNew = () => {
     setForm(emptyForm());
+    setHasPhoto(false);
     setEditing(null);
   };
   const openEdit = (it: MenuItemDto) => {
@@ -59,7 +68,31 @@ export function AdminMenu() {
       price: Number(it.price),
       photoUrl: '',
     });
+    setHasPhoto(it.hasPhoto);
     setEditing(it);
+  };
+  const onPickPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // позволяем выбрать тот же файл повторно
+    if (!file || !editing) return;
+    uploadPhoto.mutate(
+      { id: editing.id, file },
+      {
+        onSuccess: () => {
+          setHasPhoto(true);
+          setPhotoVer((v) => v + 1);
+        },
+      },
+    );
+  };
+  const onRemovePhoto = () => {
+    if (!editing) return;
+    deletePhoto.mutate(editing.id, {
+      onSuccess: () => {
+        setHasPhoto(false);
+        setPhotoVer((v) => v + 1);
+      },
+    });
   };
   const submit = () => {
     const body: DishBody = {
@@ -108,6 +141,44 @@ export function AdminMenu() {
             value={form.price || ''}
             onChange={(e) => setForm({ ...form, price: Number(e.target.value) || 0 })}
           />
+        </div>
+        <div className="field">
+          <label>{t('adm_photo')}</label>
+          {editing ? (
+            <>
+              {hasPhoto && (
+                <img
+                  className="dish-photo"
+                  src={`/api/menu/${editing.id}/photo?v=${photoVer}`}
+                  alt=""
+                  style={{ marginBottom: 8, borderRadius: 8, maxHeight: 160, objectFit: 'cover' }}
+                />
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={onPickPhoto}
+                style={{ display: 'none' }}
+              />
+              <div className="seg">
+                <button
+                  className="btn"
+                  disabled={uploadPhoto.isPending}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {uploadPhoto.isPending ? t('adm_photo_uploading') : t('adm_photo_upload')}
+                </button>
+                {hasPhoto && (
+                  <button className="btn" disabled={deletePhoto.isPending} onClick={onRemovePhoto}>
+                    {t('adm_photo_remove')}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="muted">{t('adm_photo_save_first')}</div>
+          )}
         </div>
         <div className="seg">
           <button className="btn" onClick={close}>

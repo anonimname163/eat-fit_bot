@@ -32,6 +32,15 @@ export class MenuItem extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   photoUrl!: string | null;
 
+  // Загруженное из Mini App/сайта фото: бинарь в БД (ФС Railway эфемерна).
+  // select:false — не тянуть бинарь в списочных запросах; грузим отдельно при отдаче.
+  @Column({ type: 'bytea', nullable: true, select: false })
+  photoData!: Buffer | null;
+
+  // MIME загруженного фото; всегда в выборке → по нему определяем наличие фото без чтения бинаря.
+  @Column({ type: 'varchar', nullable: true })
+  photoMime!: string | null;
+
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 }

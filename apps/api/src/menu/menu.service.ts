@@ -71,4 +71,29 @@ export class MenuService {
     await this.getEntityOrThrow(id);
     await this.repo.delete(id);
   }
+
+  /** Бинарь загруженного фото (для прокси-эндпоинта). */
+  loadPhotoBytes(id: string): Promise<{ data: Buffer; mime: string } | null> {
+    return this.repo.findPhotoBytes(id);
+  }
+
+  /** Сохранить загруженное фото (Mini App/сайт). Сбрасывает file_id/URL — источник один. */
+  async setPhoto(id: string, data: Buffer, mime: string): Promise<MenuItemResponseDto> {
+    const item = await this.getEntityOrThrow(id);
+    item.photoData = data;
+    item.photoMime = mime;
+    item.photoFileId = null;
+    item.photoUrl = null;
+    return new MenuItemResponseDto(await this.repo.save(item));
+  }
+
+  /** Удалить любое фото блюда. */
+  async clearPhoto(id: string): Promise<MenuItemResponseDto> {
+    const item = await this.getEntityOrThrow(id);
+    item.photoData = null;
+    item.photoMime = null;
+    item.photoFileId = null;
+    item.photoUrl = null;
+    return new MenuItemResponseDto(await this.repo.save(item));
+  }
 }

@@ -40,3 +40,25 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+/** Загрузка файла (multipart) под /api с JWT. Content-Type ставит браузер (boundary). */
+export async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const token = getAuthToken();
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as
+      | { message?: string; error?: string }
+      | null;
+    throw new ApiError(res.status, err?.message || res.statusText, err?.error);
+  }
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}

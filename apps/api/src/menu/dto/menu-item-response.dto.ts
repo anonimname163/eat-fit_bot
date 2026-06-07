@@ -25,7 +25,7 @@ export class MenuItemResponseDto {
     this.descriptionRu = item.descriptionRu;
     this.descriptionUz = item.descriptionUz;
     this.price = item.price.toString();
-    this.hasPhoto = Boolean(item.photoFileId || item.photoUrl);
+    this.hasPhoto = Boolean(item.photoFileId || item.photoUrl || item.photoMime);
     this.isActive = item.isActive;
     this.createdAt = item.createdAt;
   }
