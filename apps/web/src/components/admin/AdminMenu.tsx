@@ -11,6 +11,7 @@ import {
   useUploadDishPhoto,
   useDeleteDishPhoto,
   usePublicConfig,
+  usePublishDish,
   type DishBody,
 } from '@/lib/admin-queries';
 import { useT, type I18nKey } from '@/lib/i18n';
@@ -45,6 +46,14 @@ export function AdminMenu() {
   const uploadPhoto = useUploadDishPhoto();
   const deletePhoto = useDeleteDishPhoto();
   const { data: config } = usePublicConfig();
+  const publish = usePublishDish();
+
+  const onPublish = (id: string) => {
+    publish.mutate(id, {
+      onSuccess: () => window.alert(t('adm_published')),
+      onError: (e) => window.alert((e as Error).message),
+    });
+  };
 
   // Какому блюду показываем предпросмотр поста (id) — null если скрыт.
   const [postFor, setPostFor] = useState<string | null>(null);
@@ -292,6 +301,14 @@ export function AdminMenu() {
                   {t('adm_no_bot_username')}
                 </div>
               )}
+              <button
+                className="btn btn-block"
+                disabled={publish.isPending}
+                onClick={() => onPublish(it.id)}
+                style={{ marginTop: 8 }}
+              >
+                {publish.isPending ? t('adm_publishing') : t('adm_publish')}
+              </button>
             </div>
           )}
         </div>

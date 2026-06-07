@@ -16,7 +16,8 @@ import { BotStateService } from '../bot-state.service';
 import { BotStaffService } from '../bot-staff.service';
 import { BotUiService } from '../bot-ui.service';
 import { BotMenuAdminService } from '../bot-menu-admin.service';
-import { t, esc, pick, formatMoney, statusText, Lang } from '../i18n/bot-i18n';
+import { t, esc, pick, statusText, Lang } from '../i18n/bot-i18n';
+import { channelPostText, orderDeepLinkButton } from '../channel-post';
 
 /**
  * Действия персонала (повар/курьер/админ): смена статуса заказа из inline-кнопок панели.
@@ -267,26 +268,14 @@ export class StaffUpdate {
     }
   }
 
-  /** Текст поста блюда — двуязычный (ru + uz), канал публичный для обеих аудиторий. */
+  /** Текст поста блюда — двуязычный (общий билдер channel-post). */
   private postText(item: MenuItem): string {
-    const nameRu = item.nameRu?.trim();
-    const nameUz = item.nameUz?.trim();
-    const nameLine =
-      nameRu && nameUz && nameRu !== nameUz ? `${nameRu} / ${nameUz}` : nameRu || nameUz || '';
-
-    const lines = [`🍽 <b>${esc(nameLine)}</b>`];
-    if (item.descriptionRu?.trim()) lines.push(`🇷🇺 ${esc(item.descriptionRu.trim())}`);
-    if (item.descriptionUz?.trim()) lines.push(`🇺🇿 ${esc(item.descriptionUz.trim())}`);
-    lines.push(`💵 ${esc(formatMoney(item.price.toString()))} сум / so‘m`);
-    return lines.join('\n');
+    return channelPostText(item);
   }
 
-  /** Inline-кнопка «Заказать» с deep link (если задан BOT_USERNAME). */
+  /** Inline-кнопка «Заказать» с deep link (общий билдер channel-post). */
   private orderButton(item: MenuItem, lang: Lang) {
-    const username = this.config.get<string>('bot.username');
-    if (!username) return {};
-    const url = `https://t.me/${username}?start=item_${item.id}`;
-    return Markup.inlineKeyboard([[Markup.button.url(t(lang, 'post_order_btn'), url)]]);
+    return orderDeepLinkButton(item, lang, this.config.get<string>('bot.username'));
   }
 
   // ───────────────────────────── настройки (админ) ─────────────────────────────

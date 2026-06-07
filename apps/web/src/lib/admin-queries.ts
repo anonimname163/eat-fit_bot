@@ -103,6 +103,12 @@ export function useDeleteDishPhoto() {
     },
   });
 }
+export function usePublishDish() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ published: true }>(`/admin/menu/${id}/publish`, { method: 'POST' }),
+  });
+}
 
 /* ── пользователи ── */
 export function useAdminUsers(query: string) {

@@ -12,6 +12,8 @@ import { ReportsModule } from '../reports/reports.module';
 import { SettingsModule } from '../settings/settings.module';
 import { AppClsStore } from '../common/cls/actor-context';
 import { TelegramNotifier } from './telegram-notifier';
+import { MenuPublishService } from './menu-publish.service';
+import { MenuPublishController } from './menu-publish.controller';
 import { BotStateService } from './bot-state.service';
 import { BotUiService } from './bot-ui.service';
 import { BotStaffService } from './bot-staff.service';
@@ -58,9 +60,11 @@ import { createBotContextMiddleware } from './bot-context.middleware';
       }),
     }),
   ],
+  controllers: [MenuPublishController],
   providers: [
     TelegramNotifier,
     { provide: NOTIFIER, useExisting: TelegramNotifier },
+    MenuPublishService,
     BotStateService,
     BotUiService,
     BotStaffService,
