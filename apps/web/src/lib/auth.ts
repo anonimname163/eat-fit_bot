@@ -1,6 +1,6 @@
 import { Language } from '@eatfit/shared';
 import { api } from './api';
-import { getInitData } from './telegram';
+import { waitForInitData } from './telegram';
 import { useAuthStore, getSavedToken } from '@/store/auth.store';
 import { AuthResponse, ClientDto } from './types';
 
@@ -12,7 +12,8 @@ import { AuthResponse, ClientDto } from './types';
  */
 export async function bootstrapAuth(): Promise<void> {
   const store = useAuthStore.getState();
-  const initData = getInitData();
+  // Ждём, пока SDK Telegram заполнит initData (иначе внутри Mini App ушли бы в веб-вход).
+  const initData = await waitForInitData();
 
   if (initData) {
     store.setStatus('loading');

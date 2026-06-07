@@ -32,6 +32,37 @@ export function isTelegram(): boolean {
   return getInitData().length > 0;
 }
 
+/**
+ * Похоже ли, что мы открыты как Mini App, даже если SDK ещё не распарсил данные.
+ * Telegram кладёт tgWebApp* во фрагмент/квери URL до инициализации telegram-web-app.js.
+ */
+export function isLikelyTelegram(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (getInitData().length > 0) return true;
+  const probe = window.location.hash + window.location.search;
+  return probe.includes('tgWebAppData') || probe.includes('tgWebAppPlatform');
+}
+
+/**
+ * Дождаться, пока SDK Telegram заполнит initData (скрипт мог ещё не выполниться к моменту
+ * первого рендера). Если мы явно НЕ в Telegram — не ждём. Иначе поллим до таймаута.
+ */
+export function waitForInitData(timeoutMs = 3000): Promise<string> {
+  return new Promise((resolve) => {
+    const now = getInitData();
+    if (now) return resolve(now);
+    if (!isLikelyTelegram()) return resolve('');
+    const start = Date.now();
+    const timer = setInterval(() => {
+      const data = getInitData();
+      if (data || Date.now() - start > timeoutMs) {
+        clearInterval(timer);
+        resolve(data);
+      }
+    }, 50);
+  });
+}
+
 export function initTelegram(): void {
   const wa = getWebApp();
   if (!wa) return;
