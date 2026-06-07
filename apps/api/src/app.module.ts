@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { ClientsModule } from './clients/clients.module';
 import { MenuModule } from './menu/menu.module';
 import { DepositsModule } from './deposits/deposits.module';
+import { OrdersModule } from './orders/orders.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { HealthModule } from './health/health.module';
     AuthModule,
     MenuModule,
     DepositsModule,
+    OrdersModule,
     HealthModule,
   ],
 })
