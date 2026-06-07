@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
-import { OrderStatus, PaymentMethod } from '@eatfit/shared';
+import { Language, OrderStatus, PaymentMethod, Role, orderStatusLabel } from '@eatfit/shared';
 import { ActorContextService } from '../common/cls/actor-context.service';
 import { ConflictError, NotFoundError } from '../common/errors/domain-error';
 import { Money } from '../common/money/money';
@@ -80,12 +80,11 @@ export class OrdersService {
 
     this.cart.clear(clientId);
 
-    await this.notifier?.notifyGroup(
-      NotifyGroup.Cooks,
-      `Новый заказ #${order.id.slice(0, 8)} на ${total.toString()}.`,
-    );
+    const response = await this.buildResponse(order.id);
+    // Карточка заказа с кнопками статуса в группу поваров (роль Cook).
+    await this.notifier?.notifyGroupOrder(NotifyGroup.Cooks, response, Role.Cook);
 
-    return this.buildResponse(order.id);
+    return response;
   }
 
   async listMy(): Promise<OrderResponseDto[]> {
@@ -130,15 +129,24 @@ export class OrdersService {
     order.status = to;
     await this.orders.save(order);
 
+    const num = order.id.slice(0, 8);
     const client = await this.clients.findById(order.clientId);
     if (client?.telegramId) {
-      await this.notifier?.notifyUser(
-        client.telegramId,
-        `Статус вашего заказа #${order.id.slice(0, 8)}: ${to}.`,
-      );
+      const label = orderStatusLabel(client.language, to);
+      const message =
+        client.language === Language.Uz
+          ? `Buyurtmangiz #${num} holati: ${label}.`
+          : `Статус вашего заказа #${num}: ${label}.`;
+      await this.notifier?.notifyUser(client.telegramId, message);
     }
 
-    return this.buildResponse(order.id);
+    const response = await this.buildResponse(order.id);
+    // Готовый заказ уходит карточкой с кнопками в группу курьеров (роль Courier).
+    if (to === OrderStatus.Ready) {
+      await this.notifier?.notifyGroupOrder(NotifyGroup.Couriers, response, Role.Courier);
+    }
+
+    return response;
   }
 
   private async loadOrThrow(id: string): Promise<Order> {

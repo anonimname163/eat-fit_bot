@@ -6,8 +6,8 @@ import { InlineKeyboardButton } from 'telegraf/typings/core/types/typegram';
 import { Client } from '../clients/entities/client.entity';
 import { OrdersService } from '../orders/orders.service';
 import { OrderResponseDto } from '../orders/dto/order-response.dto';
-import { allowedTargets } from '../orders/order-status.machine';
-import { Lang, t, esc, pick, formatMoney, statusText } from './i18n/bot-i18n';
+import { Lang, t } from './i18n/bot-i18n';
+import { orderActionButtons, orderActionKeyboard, orderCardText } from './order-card';
 
 /**
  * Интерфейсы персонала (FR-B3): панели повара/курьера/админа со списком заказов и кнопками
@@ -92,40 +92,15 @@ export class BotStaffService {
       return;
     }
     for (const order of list) {
-      await ctx.reply(this.orderText(lang, order), {
+      await ctx.reply(orderCardText(lang, order), {
         parse_mode: 'HTML',
-        ...this.actionKeyboard(lang, order, client.role),
+        ...orderActionKeyboard(lang, order, client.role),
       });
     }
   }
 
-  /** Карточка заказа для персонала: позиции, адрес, сумма, комментарий. */
-  orderText(lang: Lang, order: OrderResponseDto): string {
-    const num = order.id.slice(0, 8);
-    const lines = [
-      `<b>${esc(t(lang, 'order_label'))} #${esc(num)}</b> — ${esc(statusText(lang, order.status))}`,
-    ];
-    for (const it of order.items) {
-      lines.push(`• ${esc(pick(lang, it.nameRu, it.nameUz))} ×${it.quantity}`);
-    }
-    lines.push(`${esc(t(lang, 'group_address'))}: ${esc(order.address)}`);
-    lines.push(`💵 ${esc(formatMoney(order.total))} ${esc(t(lang, 'currency'))}`);
-    if (order.comment) lines.push(`${esc(t(lang, 'group_comment'))}: ${esc(order.comment)}`);
-    return lines.join('\n');
-  }
-
-  /** Кнопки переходов из текущего статуса для роли актора. */
-  actionKeyboard(lang: Lang, order: OrderResponseDto, role: Role) {
-    return Markup.inlineKeyboard([this.actionButtons(lang, order, role)]);
-  }
-
+  /** Кнопки переходов под карточкой (используется при перестроении после смены статуса). */
   actionButtons(lang: Lang, order: OrderResponseDto, role: Role): InlineKeyboardButton[] {
-    return allowedTargets(order.status, role).map((target) => {
-      const label =
-        target === OrderStatus.Cancelled
-          ? t(lang, 'btn_cancel_order')
-          : `▶️ ${statusText(lang, target)}`;
-      return Markup.button.callback(label, `ord:set:${order.id}:${target}`);
-    });
+    return orderActionButtons(lang, order, role);
   }
 }

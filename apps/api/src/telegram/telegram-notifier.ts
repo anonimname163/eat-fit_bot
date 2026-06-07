@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
+import { Role } from '@eatfit/shared';
 import { INotifier, NotifyGroup } from '../common/notifications/notifier';
+import { OrderResponseDto } from '../orders/dto/order-response.dto';
+import { Lang } from './i18n/bot-i18n';
+import { orderActionKeyboard, orderCardText } from './order-card';
 
 /**
  * Реализация порта INotifier поверх Telegram (DIP: домен зависит от абстракции).
@@ -31,6 +35,24 @@ export class TelegramNotifier implements INotifier {
       return;
     }
     await this.send(chatId, message);
+  }
+
+  async notifyGroupOrder(group: NotifyGroup, order: OrderResponseDto, role: Role): Promise<void> {
+    const chatId = this.resolveGroup(group);
+    if (!chatId) {
+      this.logger.debug(`Группа ${group} не настроена — уведомление пропущено`);
+      return;
+    }
+    // Рабочие группы — персонал; язык карточки ru (статусы/подписи локализованы).
+    const lang = 'ru' as Lang;
+    try {
+      await this.bot.telegram.sendMessage(chatId, orderCardText(lang, order), {
+        parse_mode: 'HTML',
+        ...orderActionKeyboard(lang, order, role),
+      });
+    } catch (err) {
+      this.logger.warn(`Не удалось отправить заказ в ${chatId}: ${(err as Error).message}`);
+    }
   }
 
   private resolveGroup(group: NotifyGroup): string | undefined {
