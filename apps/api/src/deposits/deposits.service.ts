@@ -3,7 +3,7 @@ import { Transactional } from '@nestjs-cls/transactional';
 import { ActorContextService } from '../common/cls/actor-context.service';
 import { NotFoundError } from '../common/errors/domain-error';
 import { Money } from '../common/money/money';
-import { INotifier, NOTIFIER } from '../common/notifications/notifier';
+import { INotifier, NOTIFIER, NotifyGroup } from '../common/notifications/notifier';
 import { ClientRepository } from '../clients/clients.repository';
 import { BalanceService } from '../clients/balance/balance.service';
 import { DepositRepository } from './deposit.repository';
@@ -45,6 +45,10 @@ export class DepositsService {
     await this.notifier?.notifyUser(
       target.telegramId,
       `Ваш баланс пополнен на ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
+    );
+    await this.notifier?.notifyGroup(
+      NotifyGroup.Admins,
+      `Пополнение: ${target.name} (+${amount.toString()}). Баланс: ${updated.balance.toString()}.`,
     );
 
     return { deposit: new DepositResponseDto(deposit), balance: updated.balance.toString() };

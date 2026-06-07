@@ -1,8 +1,7 @@
 {
   "name": "eatfit-bot",
   "version": "1.0.0",
-  "description": "Telegram bot for Eat&fit food delivery service (RU/UZ)",
-  "main": "src/bot.js",
+  "description": "Eat&fit — доставка еды (Telegram-бот + Mini App). Монорепо: NestJS API + бот, Next.js SPA.",
   "type": "commonjs",
   "private": true,
   "workspaces": [
@@ -10,32 +9,29 @@
     "apps/*"
   ],
   "scripts": {
-    "start": "node src/bot.js",
-    "dev": "node src/bot.js",
-    "db:init": "node scripts/init-db.js",
     "shared:build": "npm run build -w @eatfit/shared",
+    "web:build": "npm run build -w @eatfit/web",
     "api:build": "npm run build -w @eatfit/api",
-    "api:dev": "npm run start:dev -w @eatfit/api"
+    "build": "npm run shared:build && npm run web:build && npm run api:build",
+    "api:dev": "npm run start:dev -w @eatfit/api",
+    "dev": "npm run api:dev",
+    "start": "node apps/api/dist/main.js"
   },
   "keywords": [
     "telegram",
     "bot",
+    "mini-app",
     "food-delivery",
-    "eatfit"
+    "nestjs",
+    "nextjs"
   ],
   "author": "",
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "dotenv": "^16.4.5",
-    "express": "^4.22.2",
-    "node-telegram-bot-api": "^0.66.0",
-    "pg": "^8.12.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.14.10",
-    "typescript": "^5.5.4"
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
   }
 }

@@ -1,0 +1,263 @@
+/*
+ * Темизация (FR-F5/NFR-15): берём переменные темы Telegram WebApp, с фолбэками для
+ * браузера. Переключение светлая/тёмная — через data-theme на <html> (ставит JS).
+ */
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --text: var(--tg-theme-text-color, #1a1a1a);
+  --hint: var(--tg-theme-hint-color, #8a8a8e);
+  --link: var(--tg-theme-link-color, #2b7cff);
+  --button: var(--tg-theme-button-color, #2b7cff);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #f1f1f4);
+  --card: var(--tg-theme-section-bg-color, #ffffff);
+  --danger: #e0394f;
+  --radius: 12px;
+}
+
+html[data-theme='dark'] {
+  --bg: #17181a;
+  --text: #f0f0f2;
+  --hint: #9a9aa0;
+  --link: #6ab3ff;
+  --button: #3a82f7;
+  --button-text: #ffffff;
+  --secondary-bg: #1f2023;
+  --card: #1f2023;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: var(--link);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+/* ───────── layout ───────── */
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: 72px;
+}
+.screen {
+  padding: 16px;
+}
+.screen h2 {
+  margin: 8px 0 16px;
+  font-size: 20px;
+}
+.cat-title {
+  margin: 20px 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.muted {
+  color: var(--hint);
+}
+.center {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--hint);
+}
+
+/* ───────── card ───────── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.dish {
+  display: flex;
+  gap: 12px;
+}
+.dish-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--secondary-bg);
+  flex-shrink: 0;
+}
+.dish-body {
+  flex: 1;
+  min-width: 0;
+}
+.dish-name {
+  font-weight: 600;
+}
+.dish-desc {
+  font-size: 13px;
+  color: var(--hint);
+  margin: 2px 0;
+}
+.dish-price {
+  font-weight: 600;
+  margin-top: 4px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* ───────── buttons ───────── */
+.btn {
+  background: var(--secondary-bg);
+  color: var(--text);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 500;
+}
+.btn-primary {
+  background: var(--button);
+  color: var(--button-text);
+}
+.btn-block {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+
+/* stepper */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.stepper button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--button);
+  color: var(--button-text);
+  font-size: 18px;
+  line-height: 1;
+}
+.stepper .qty {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ───────── forms ───────── */
+.field {
+  margin-bottom: 14px;
+}
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--hint);
+  margin-bottom: 4px;
+}
+.input,
+.textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--secondary-bg);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+}
+.textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.err {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 4px;
+}
+.seg {
+  display: flex;
+  gap: 8px;
+}
+.seg button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--secondary-bg);
+  background: var(--card);
+  color: var(--text);
+}
+.seg button.active {
+  background: var(--button);
+  color: var(--button-text);
+  border-color: var(--button);
+}
+
+/* ───────── bottom nav ───────── */
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  background: var(--card);
+  border-top: 1px solid var(--secondary-bg);
+}
+.nav button {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  font-size: 11px;
+  color: var(--hint);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.nav button.active {
+  color: var(--link);
+}
+.nav .ico {
+  font-size: 20px;
+}
+.badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}

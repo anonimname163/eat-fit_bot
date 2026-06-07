@@ -3,6 +3,7 @@ import { EntityTarget } from 'typeorm';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { TransactionalRepository } from '../common/database/transactional-repository';
+import { Money } from '../common/money/money';
 import { Client } from './entities/client.entity';
 
 @Injectable()
@@ -43,7 +44,9 @@ export class ClientRepository extends TransactionalRepository<Client> {
   }
 
   create(data: Partial<Client>): Promise<Client> {
-    return this.repo.save(this.repo.create(data));
+    // Денежный трансформер пишет null при undefined (перебивая DB-default) → задаём
+    // нулевой баланс по умолчанию; явный balance в data его переопределяет.
+    return this.repo.save(this.repo.create({ balance: Money.zero(), ...data }));
   }
 
   save(client: Client): Promise<Client> {

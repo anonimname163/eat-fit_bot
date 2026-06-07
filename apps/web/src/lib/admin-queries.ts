@@ -1,0 +1,113 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Category, OrderStatus, Role } from '@eatfit/shared';
+import { api } from './api';
+import { ClientDto, MenuItemDto, OrderDto, SettingsDto } from './types';
+
+export interface DishBody {
+  category: Category;
+  nameRu: string;
+  nameUz: string;
+  descriptionRu?: string;
+  descriptionUz?: string;
+  price: number;
+  photoUrl?: string;
+  isActive?: boolean;
+}
+
+/* ── заказы ── */
+export function useAdminOrders() {
+  return useQuery({ queryKey: ['admin', 'orders'], queryFn: () => api<OrderDto[]>('/admin/orders') });
+}
+export function useTransition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; status: OrderStatus }) =>
+      api<OrderDto>(`/admin/orders/${v.id}/status`, { method: 'POST', body: { status: v.status } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'orders'] }),
+  });
+}
+
+/* ── меню ── */
+export function useAdminMenu() {
+  return useQuery({ queryKey: ['admin', 'menu'], queryFn: () => api<MenuItemDto[]>('/admin/menu') });
+}
+export function useCreateDish() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: DishBody) => api<MenuItemDto>('/admin/menu', { method: 'POST', body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+export function useUpdateDish() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; body: Partial<DishBody> }) =>
+      api<MenuItemDto>(`/admin/menu/${v.id}`, { method: 'PUT', body: v.body }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+export function useSetDishActive() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; isActive: boolean }) =>
+      api<MenuItemDto>(`/admin/menu/${v.id}/active`, { method: 'PATCH', body: { isActive: v.isActive } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+export function useDeleteDish() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/admin/menu/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'menu'] });
+      qc.invalidateQueries({ queryKey: ['menu'] });
+    },
+  });
+}
+
+/* ── пользователи ── */
+export function useAdminUsers(query: string) {
+  return useQuery({
+    queryKey: ['admin', 'users', query],
+    queryFn: () =>
+      api<ClientDto[]>(`/admin/clients${query ? `?query=${encodeURIComponent(query)}` : ''}`),
+  });
+}
+export function useChangeRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; role: Role }) =>
+      api<ClientDto>(`/admin/clients/${v.id}/role`, { method: 'POST', body: { role: v.role } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  });
+}
+export function useDeposit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { clientId: string; amount: number }) =>
+      api<{ balance: string }>('/admin/deposits', { method: 'POST', body: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  });
+}
+
+/* ── настройки ── */
+export function useSettings() {
+  return useQuery({ queryKey: ['admin', 'settings'], queryFn: () => api<SettingsDto>('/admin/settings') });
+}
+export function useSaveSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<SettingsDto>) =>
+      api<SettingsDto>('/admin/settings', { method: 'PUT', body }),
+    onSuccess: (data) => qc.setQueryData(['admin', 'settings'], data),
+  });
+}

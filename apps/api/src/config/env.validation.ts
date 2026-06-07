@@ -13,13 +13,15 @@ export const validationSchema = Joi.object({
 
   BOT_TOKEN: Joi.string().required(),
   BOT_USERNAME: Joi.string().optional(),
+  BOT_ENABLED: Joi.string().valid('true', 'false').default('true'),
+  WEB_APP_URL: Joi.string().uri().optional(),
   // Секрет вебхука Telegram (проверяется на входе). Обязателен в prod.
   TELEGRAM_WEBHOOK_SECRET: Joi.string().min(16).optional(),
 
   ADMIN_TELEGRAM_IDS: Joi.string().optional(),
   CHANNEL_ID: Joi.string().optional(),
-  COOKS_GROUP_ID: Joi.string().optional(),
-  COURIERS_GROUP_ID: Joi.string().optional(),
+  COOK_GROUP_ID: Joi.string().optional(),
+  COURIER_GROUP_ID: Joi.string().optional(),
   ADMIN_GROUP_ID: Joi.string().optional(),
 
   CORS_ORIGINS: Joi.string().optional(),

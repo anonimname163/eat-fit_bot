@@ -21,12 +21,16 @@ export default () => ({
     token: process.env.BOT_TOKEN,
     username: process.env.BOT_USERNAME,
     webhookSecret: process.env.TELEGRAM_WEBHOOK_SECRET,
+    // Один инстанс получает апдейты (AR-14): на остальных BOT_ENABLED=false.
+    enabled: (process.env.BOT_ENABLED ?? 'true') === 'true',
+    // Публичный URL Mini App (кнопка открытия приложения в боте).
+    webAppUrl: process.env.WEB_APP_URL,
   },
   telegram: {
     adminIds: parseIds(process.env.ADMIN_TELEGRAM_IDS),
     channelId: process.env.CHANNEL_ID,
-    cooksGroupId: process.env.COOKS_GROUP_ID,
-    couriersGroupId: process.env.COURIERS_GROUP_ID,
+    cooksGroupId: process.env.COOK_GROUP_ID,
+    couriersGroupId: process.env.COURIER_GROUP_ID,
     adminGroupId: process.env.ADMIN_GROUP_ID,
   },
   cors: {

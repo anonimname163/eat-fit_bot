@@ -18,5 +18,6 @@ import { CART_STORE, InMemoryCartStore } from './cart/cart-store';
     CartService,
     { provide: CART_STORE, useClass: InMemoryCartStore },
   ],
+  exports: [OrdersService, CartService], // для Telegram-бота (M5)
 })
 export class OrdersModule {}

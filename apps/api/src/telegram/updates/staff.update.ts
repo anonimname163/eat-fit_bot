@@ -1,0 +1,284 @@
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Update, Action, Command, Ctx } from 'nestjs-telegraf';
+import { Markup } from 'telegraf';
+import type { Context } from 'telegraf';
+import { OrderStatus } from '@eatfit/shared';
+import { ClientRepository } from '../../clients/clients.repository';
+import { Client } from '../../clients/entities/client.entity';
+import { MenuRepository } from '../../menu/menu.repository';
+import { MenuItem } from '../../menu/entities/menu-item.entity';
+import { OrdersService } from '../../orders/orders.service';
+import { ReportsService } from '../../reports/reports.service';
+import { SettingsService } from '../../settings/settings.service';
+import { DomainError } from '../../common/errors/domain-error';
+import { BotStateService } from '../bot-state.service';
+import { BotStaffService } from '../bot-staff.service';
+import { BotUiService } from '../bot-ui.service';
+import { t, esc, pick, formatMoney, statusText, Lang } from '../i18n/bot-i18n';
+
+/**
+ * Действия персонала (повар/курьер/админ): смена статуса заказа из inline-кнопок панели.
+ * Единый обработчик `ord:set:<orderId>:<targetStatus>` — права проверяет домен
+ * (OrdersService.transition → assertTransition по роли актора из CLS), а не callback_data.
+ * Отдельный @Update-класс: только @Action, без общих @On('text') — конфликтов нет.
+ */
+@Update()
+export class StaffUpdate {
+  private readonly logger = new Logger(StaffUpdate.name);
+
+  constructor(
+    private readonly clients: ClientRepository,
+    private readonly orders: OrdersService,
+    private readonly staff: BotStaffService,
+    private readonly state: BotStateService,
+    private readonly ui: BotUiService,
+    private readonly reports: ReportsService,
+    private readonly settings: SettingsService,
+    private readonly menu: MenuRepository,
+    private readonly config: ConfigService,
+  ) {}
+
+  /** Резолв админа из апдейта; иначе гасит callback и возвращает null. */
+  private async requireAdmin(ctx: Context): Promise<Client | null> {
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (!client || !this.ui.isAdmin(client)) {
+      await ctx.answerCbQuery();
+      return null;
+    }
+    return client;
+  }
+
+  // ───────────────────────────── вход в админ-панель ─────────────────────────────
+
+  @Command('admin')
+  async onAdminCommand(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (client && this.ui.isAdmin(client)) await this.staff.showAdminOrders(ctx, client);
+    // обычным пользователям — молча (команда им недоступна).
+  }
+
+  // ───────────────────────────── пополнение баланса (FR-D1) ─────────────────────────────
+
+  @Action('admin:deposit')
+  async onDeposit(@Ctx() ctx: Context): Promise<void> {
+    const from = ctx.from;
+    const client = await this.requireAdmin(ctx);
+    if (!from || !client) return;
+    await ctx.answerCbQuery();
+    this.state.setSession(from.id, 'deposit', 'client');
+    await ctx.reply(t(client.language, 'deposit_ask_client'));
+  }
+
+  // ───────────────────────────── посты в канал (FR-B4) ─────────────────────────────
+
+  @Action('admin:post')
+  async onPostList(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.requireAdmin(ctx);
+    if (!client) return;
+    await ctx.answerCbQuery();
+    const lang = client.language;
+    const items = await this.menu.findActive();
+    if (!items.length) {
+      await ctx.reply(t(lang, 'menu_empty'));
+      return;
+    }
+    const rows = items.map((i) => [
+      Markup.button.callback(pick(lang, i.nameRu, i.nameUz), `admin:post:${i.id}`),
+    ]);
+    await ctx.reply(t(lang, 'gen_post_choose'), Markup.inlineKeyboard(rows));
+  }
+
+  @Action(/^admin:post:(.+)$/)
+  async onPostPreview(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.requireAdmin(ctx);
+    if (!client) return;
+    await ctx.answerCbQuery();
+    const lang = client.language;
+    const id = (ctx as Context & { match?: RegExpExecArray }).match?.[1] ?? '';
+    const item = await this.menu.findById(id);
+    if (!item) {
+      await ctx.reply(t(lang, 'dish_not_found'));
+      return;
+    }
+    const markup = Markup.inlineKeyboard([
+      [Markup.button.callback(t(lang, 'btn_publish_channel'), `admin:publish:${item.id}`)],
+    ]);
+    const text = this.postText(item);
+    const photo = item.photoFileId || item.photoUrl;
+    if (photo) {
+      await ctx.replyWithPhoto(photo, { caption: text, parse_mode: 'HTML', ...markup });
+    } else {
+      await ctx.reply(text, { parse_mode: 'HTML', ...markup });
+    }
+  }
+
+  @Action(/^admin:publish:(.+)$/)
+  async onPublish(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.requireAdmin(ctx);
+    if (!client) return;
+    const lang = client.language;
+    const channelId = this.config.get<string>('telegram.channelId');
+    if (!channelId) {
+      await ctx.answerCbQuery();
+      await ctx.reply(t(lang, 'channel_not_set'));
+      return;
+    }
+    const id = (ctx as Context & { match?: RegExpExecArray }).match?.[1] ?? '';
+    const item = await this.menu.findById(id);
+    if (!item) {
+      await ctx.answerCbQuery(t(lang, 'dish_not_found'));
+      return;
+    }
+    try {
+      const text = this.postText(item);
+      const photo = item.photoFileId || item.photoUrl;
+      const extra = { parse_mode: 'HTML' as const, ...this.orderButton(item, lang) };
+      if (photo) {
+        await ctx.telegram.sendPhoto(channelId, photo, { caption: text, ...extra });
+      } else {
+        await ctx.telegram.sendMessage(channelId, text, extra);
+      }
+      await ctx.answerCbQuery(t(lang, 'published_ok'));
+    } catch (err) {
+      this.logger.error(`Публикация в канал: ${(err as Error).message}`);
+      await ctx.answerCbQuery(t(lang, 'error_generic'));
+    }
+  }
+
+  /** Текст поста блюда (ru — канал публичный). */
+  private postText(item: MenuItem): string {
+    const name = item.nameRu || item.nameUz;
+    const desc = item.descriptionRu || '';
+    const lines = [`🍽 <b>${esc(name)}</b>`];
+    if (desc) lines.push(esc(desc));
+    lines.push(`💵 ${esc(formatMoney(item.price.toString()))} сум`);
+    return lines.join('\n');
+  }
+
+  /** Inline-кнопка «Заказать» с deep link (если задан BOT_USERNAME). */
+  private orderButton(item: MenuItem, lang: Lang) {
+    const username = this.config.get<string>('bot.username');
+    if (!username) return {};
+    const url = `https://t.me/${username}?start=item_${item.id}`;
+    return Markup.inlineKeyboard([[Markup.button.url(t(lang, 'post_order_btn'), url)]]);
+  }
+
+  // ───────────────────────────── настройки (админ) ─────────────────────────────
+
+  @Action('admin:settings')
+  async onSettings(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (!client || !this.ui.isAdmin(client)) {
+      await ctx.answerCbQuery();
+      return;
+    }
+    await ctx.answerCbQuery();
+    const lang = client.language;
+    const v = await this.settings.view();
+    const dash = t(lang, 'not_set_dash');
+    const text = [
+      `<b>${esc(t(lang, 'settings_title'))}</b>`,
+      `${esc(t(lang, 'topup_tg'))}: ${esc(v.topupTelegram ?? dash)}`,
+      `${esc(t(lang, 'topup_phone'))}: ${esc(v.topupPhone ?? dash)}`,
+      `${esc(t(lang, 'support_title'))}: ${esc(v.supportContact ?? dash)}`,
+    ].join('\n');
+    await ctx.reply(text, {
+      parse_mode: 'HTML',
+      ...Markup.inlineKeyboard([
+        [Markup.button.callback(t(lang, 'set_topup_tg'), 'admin:set:topup_tg')],
+        [Markup.button.callback(t(lang, 'set_topup_phone'), 'admin:set:topup_phone')],
+        [Markup.button.callback(t(lang, 'set_support'), 'admin:set:support')],
+      ]),
+    });
+  }
+
+  @Action(/^admin:set:(topup_tg|topup_phone|support)$/)
+  async onSettingEdit(@Ctx() ctx: Context): Promise<void> {
+    const from = ctx.from;
+    const client = await this.clients.findByTelegramId(String(from?.id));
+    if (!from || !client || !this.ui.isAdmin(client)) {
+      await ctx.answerCbQuery();
+      return;
+    }
+    await ctx.answerCbQuery();
+    const field = (ctx as Context & { match?: RegExpExecArray }).match?.[1] ?? '';
+    this.state.setSession(from.id, 'settings_edit', field);
+    const lang = client.language;
+    const ask = field === 'topup_tg' ? 'ask_topup_tg' : field === 'topup_phone' ? 'ask_topup_phone' : 'ask_support';
+    await ctx.reply(t(lang, ask));
+  }
+
+  // ───────────────────────────── итоги дня (админ) ─────────────────────────────
+
+  @Command('report')
+  async onReportCommand(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (client && this.ui.isAdmin(client)) await this.sendReport(ctx, client);
+  }
+
+  @Action('admin:report')
+  async onReportAction(@Ctx() ctx: Context): Promise<void> {
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (!client || !this.ui.isAdmin(client)) {
+      await ctx.answerCbQuery();
+      return;
+    }
+    await ctx.answerCbQuery(t(client.language, 'report_sent'));
+    await this.sendReport(ctx, client);
+  }
+
+  /** Показать отчёт админу и продублировать в админ-группу (если настроена). */
+  private async sendReport(ctx: Context, client: Client): Promise<void> {
+    try {
+      const text = await this.reports.buildDailyReportText();
+      await ctx.reply(text, { parse_mode: 'HTML' });
+      await this.reports.sendDailyReportToAdmins();
+    } catch (err) {
+      this.logger.error(`Отчёт: ${(err as Error).message}`);
+      await ctx.reply(t(client.language, 'error_generic'));
+    }
+  }
+
+  @Action(/^ord:set:(.+):([a-z]+)$/)
+  async onTransition(@Ctx() ctx: Context): Promise<void> {
+    const cbId = (ctx.callbackQuery as { id?: string } | undefined)?.id;
+    if (cbId && this.state.isDuplicateCallback(cbId, Date.now())) {
+      await ctx.answerCbQuery();
+      return;
+    }
+
+    const match = (ctx as Context & { match?: RegExpExecArray }).match;
+    const orderId = match?.[1] ?? '';
+    const target = match?.[2] ?? '';
+
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    const lang: Lang = client?.language ?? ('ru' as Lang);
+
+    if (!Object.values(OrderStatus).includes(target as OrderStatus)) {
+      await ctx.answerCbQuery(t(lang, 'error_generic'));
+      return;
+    }
+
+    try {
+      const updated = await this.orders.transition(orderId, target as OrderStatus);
+      await ctx.answerCbQuery(statusText(lang, updated.status));
+      // Перестраиваем кнопки под новый статус (если переходов больше нет — убираем).
+      const buttons = client ? this.staff.actionButtons(lang, updated, client.role) : [];
+      try {
+        await ctx.editMessageReplyMarkup(
+          buttons.length ? { inline_keyboard: [buttons] } : undefined,
+        );
+      } catch {
+        /* сообщение могло не измениться / без прав на edit — игнор */
+      }
+    } catch (err) {
+      if (err instanceof DomainError) {
+        await ctx.answerCbQuery(err.message);
+      } else {
+        this.logger.error(`Переход заказа ${orderId}→${target}: ${(err as Error).message}`);
+        await ctx.answerCbQuery(t(lang, 'error_generic'));
+      }
+    }
+  }
+}

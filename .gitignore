@@ -1,12 +1,21 @@
 node_modules/
+_bmad
+_bmad-output
 .env
+.env.bak
+.env*.local
 *.log
 npm-debug.log*
 .DS_Store
 .claude/
+
+# Личный handoff-файл прогресса (содержит dev-секреты)
+REFACTOR-PROGRESS.md
 
 # Сборка монорепо
 dist/
 **/dist/
 *.tsbuildinfo
 .next/
+out/
+**/out/

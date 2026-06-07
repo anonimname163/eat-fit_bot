@@ -8,5 +8,6 @@ import { DepositsController } from './deposits.controller';
   imports: [ClientsModule], // BalanceService + ClientRepository
   controllers: [DepositsController],
   providers: [DepositRepository, DepositsService],
+  exports: [DepositsService], // для Telegram-бота (FR-D1)
 })
 export class DepositsModule {}

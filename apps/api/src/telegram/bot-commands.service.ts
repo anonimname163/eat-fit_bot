@@ -1,0 +1,57 @@
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { InjectBot } from 'nestjs-telegraf';
+import { Telegraf } from 'telegraf';
+
+/**
+ * Меню команд Telegram (setMyCommands) со скоупами:
+ *  - обычные пользователи (all_private_chats) видят только клиентские команды;
+ *  - админы (по ADMIN_TELEGRAM_IDS) дополнительно видят /admin и /report.
+ * Так /admin не отображается обычным пользователям (а @Command('admin') ещё и закрыт гвардом).
+ */
+@Injectable()
+export class BotCommandsService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(BotCommandsService.name);
+
+  constructor(
+    @InjectBot() private readonly bot: Telegraf,
+    private readonly config: ConfigService,
+  ) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    if (this.config.get<boolean>('bot.enabled') === false) return;
+
+    const base = [
+      { command: 'start', description: 'Главное меню' },
+      { command: 'menu', description: 'Меню ресторана' },
+      { command: 'profile', description: 'Мой профиль' },
+    ];
+    const adminExtra = [
+      { command: 'admin', description: 'Админ-панель' },
+      { command: 'report', description: 'Итоги дня' },
+    ];
+
+    // Дефолт для всех (без /admin) — главное: скрыть админ-команды от обычных пользователей.
+    try {
+      await this.bot.telegram.setMyCommands(base, { scope: { type: 'all_private_chats' } });
+    } catch (err) {
+      this.logger.warn(`Меню команд (дефолт): ${(err as Error).message}`);
+    }
+
+    // Персональное меню админам — best-effort: «chat not found» нормально, если админ
+    // ещё не открывал диалог с ботом (применится при следующем рестарте после контакта).
+    const adminIds = this.config.get<string[]>('telegram.adminIds') ?? [];
+    let applied = 0;
+    for (const id of adminIds) {
+      try {
+        await this.bot.telegram.setMyCommands([...base, ...adminExtra], {
+          scope: { type: 'chat', chat_id: Number(id) },
+        });
+        applied++;
+      } catch {
+        /* chat not found — админ ещё не писал боту; ок */
+      }
+    }
+    this.logger.log(`Меню команд установлено (админам персонально: ${applied}/${adminIds.length})`);
+  }
+}
