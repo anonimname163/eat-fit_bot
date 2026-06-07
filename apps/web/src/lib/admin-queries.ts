@@ -124,7 +124,10 @@ export function useDeposit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { clientId: string; amount: number }) =>
-      api<{ balance: string }>('/admin/deposits', { method: 'POST', body: v }),
+      api<{ balance: string }>('/admin/deposits', {
+        method: 'POST',
+        body: { ...v, idempotencyKey: crypto.randomUUID() },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }
@@ -132,7 +135,10 @@ export function useWithdraw() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: { clientId: string; amount: number }) =>
-      api<{ balance: string }>('/admin/withdrawals', { method: 'POST', body: v }),
+      api<{ balance: string }>('/admin/withdrawals', {
+        method: 'POST',
+        body: { ...v, idempotencyKey: crypto.randomUUID() },
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }

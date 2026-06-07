@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Inject, Injectable, Optional } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { ActorContextService } from '../common/cls/actor-context.service';
@@ -36,12 +37,21 @@ export class DepositsService {
     }
 
     const amount = Money.fromMajor(dto.amount);
+    const key = dto.idempotencyKey ?? randomUUID();
+
+    // Сначала проводка по балансу (идемпотентна по ключу). Запись Deposit и уведомления —
+    // только если операция реально применена, иначе повтор создал бы дубль истории/спама.
+    const { client: updated, applied } = await this.balance.deposit(target.id, amount, key);
+    if (!applied) {
+      const [last] = await this.deposits.findByClient(target.id);
+      return { deposit: new DepositResponseDto(last), balance: updated.balance.toString() };
+    }
+
     const deposit = await this.deposits.create({
       clientId: target.id,
       amount,
       adminTelegramId: admin.telegramId,
     });
-    const updated = await this.balance.deposit(target.id, amount);
     await this.notifyBalanceChange(target, amount, updated, 'deposit');
 
     return { deposit: new DepositResponseDto(deposit), balance: updated.balance.toString() };
@@ -56,8 +66,12 @@ export class DepositsService {
     }
 
     const amount = Money.fromMajor(dto.amount);
-    const updated = await this.balance.adminDebit(target.id, amount);
-    await this.notifyBalanceChange(target, amount, updated, 'debit');
+    const key = dto.idempotencyKey ?? randomUUID();
+
+    const { client: updated, applied } = await this.balance.adminDebit(target.id, amount, key);
+    if (applied) {
+      await this.notifyBalanceChange(target, amount, updated, 'debit');
+    }
 
     return { balance: updated.balance.toString() };
   }

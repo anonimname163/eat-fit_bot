@@ -20,4 +20,9 @@ export class BalanceRepository extends TransactionalRepository<BalanceTransactio
   findByClient(clientId: string): Promise<BalanceTransaction[]> {
     return this.repo.find({ where: { clientId }, order: { createdAt: 'DESC' } });
   }
+
+  /** Проводка по ключу идемпотентности (для дедупа повторных денежных команд). */
+  findByIdempotencyKey(key: string): Promise<BalanceTransaction | null> {
+    return this.repo.findOne({ where: { idempotencyKey: key } });
+  }
 }

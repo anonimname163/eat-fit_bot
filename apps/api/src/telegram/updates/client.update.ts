@@ -496,6 +496,17 @@ export class ClientUpdate {
         await ctx.reply(t(lang, 'user_not_found'));
         return;
       }
+      // Несколько совпадений — не угадываем, а даём выбрать (раньше молча брался первый).
+      if (found.length > 1) {
+        const rows = found.slice(0, 8).map((c) => [
+          Markup.button.callback(
+            `${c.name} · ${c.phone ?? c.telegramId}`,
+            `dep:pick:${c.id}`,
+          ),
+        ]);
+        await ctx.reply(t(lang, 'deposit_choose_client'), Markup.inlineKeyboard(rows));
+        return;
+      }
       const target = found[0];
       this.state.updateSession(from.id, { step: 'amount', data: { clientId: target.id } });
       await ctx.reply(

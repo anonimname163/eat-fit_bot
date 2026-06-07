@@ -270,11 +270,13 @@ export function AdminMenu() {
                   style={{ borderRadius: 8, marginBottom: 8, maxHeight: 180, objectFit: 'cover' }}
                 />
               )}
-              <div className="dish-name">🍽 {it.nameRu}</div>
-              {it.descriptionRu && <div className="dish-desc">{it.descriptionRu}</div>}
-              <div className="dish-desc">
-                💵 {formatMoney(it.price)} {t('currency')}
+              <div className="dish-name">
+                🍽 {it.nameRu}
+                {it.nameUz && it.nameUz !== it.nameRu ? ` / ${it.nameUz}` : ''}
               </div>
+              {it.descriptionRu && <div className="dish-desc">🇷🇺 {it.descriptionRu}</div>}
+              {it.descriptionUz && <div className="dish-desc">🇺🇿 {it.descriptionUz}</div>}
+              <div className="dish-desc">💵 {formatMoney(it.price)} сум / so‘m</div>
               {deepLink(it.id) ? (
                 <a
                   className="btn btn-primary btn-block"

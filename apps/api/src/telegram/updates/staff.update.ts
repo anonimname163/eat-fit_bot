@@ -169,6 +169,28 @@ export class StaffUpdate {
     await ctx.reply(t(client.language, 'deposit_ask_client'));
   }
 
+  /** Выбор клиента из списка совпадений (FR-D1, L5) — переводит FSM депозита к вводу суммы. */
+  @Action(/^dep:pick:(.+)$/)
+  async onDepositPick(@Ctx() ctx: Context): Promise<void> {
+    const from = ctx.from;
+    const admin = await this.requireAdmin(ctx);
+    if (!from || !admin) return;
+    await ctx.answerCbQuery();
+    const lang = admin.language;
+    const clientId = this.cbArg(ctx, 1);
+    const target = await this.clients.findById(clientId);
+    if (!target) {
+      await ctx.reply(t(lang, 'user_not_found'));
+      return;
+    }
+    this.state.setSession(from.id, 'deposit', 'amount', { clientId: target.id });
+    await ctx.reply(
+      `${esc(t(lang, 'deposit_client_found'))}: <b>${esc(target.name)}</b> (${esc(target.phone ?? target.telegramId)})`,
+      { parse_mode: 'HTML' },
+    );
+    await ctx.reply(t(lang, 'deposit_ask_amount'));
+  }
+
   // ───────────────────────────── посты в канал (FR-B4) ─────────────────────────────
 
   @Action('admin:post')
@@ -245,13 +267,17 @@ export class StaffUpdate {
     }
   }
 
-  /** Текст поста блюда (ru — канал публичный). */
+  /** Текст поста блюда — двуязычный (ru + uz), канал публичный для обеих аудиторий. */
   private postText(item: MenuItem): string {
-    const name = item.nameRu || item.nameUz;
-    const desc = item.descriptionRu || '';
-    const lines = [`🍽 <b>${esc(name)}</b>`];
-    if (desc) lines.push(esc(desc));
-    lines.push(`💵 ${esc(formatMoney(item.price.toString()))} сум`);
+    const nameRu = item.nameRu?.trim();
+    const nameUz = item.nameUz?.trim();
+    const nameLine =
+      nameRu && nameUz && nameRu !== nameUz ? `${nameRu} / ${nameUz}` : nameRu || nameUz || '';
+
+    const lines = [`🍽 <b>${esc(nameLine)}</b>`];
+    if (item.descriptionRu?.trim()) lines.push(`🇷🇺 ${esc(item.descriptionRu.trim())}`);
+    if (item.descriptionUz?.trim()) lines.push(`🇺🇿 ${esc(item.descriptionUz.trim())}`);
+    lines.push(`💵 ${esc(formatMoney(item.price.toString()))} сум / so‘m`);
     return lines.join('\n');
   }
 

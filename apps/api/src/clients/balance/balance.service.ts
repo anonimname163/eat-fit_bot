@@ -22,44 +22,46 @@ export class BalanceService {
 
   /** Пополнение (только админом — вызывается из DepositsService). */
   @Transactional()
-  deposit(clientId: string, amount: Money): Promise<Client> {
-    return this.apply(clientId, amount, BalanceTransactionType.Deposit, null, null);
+  deposit(clientId: string, amount: Money, idempotencyKey: string | null = null): Promise<ApplyResult> {
+    return this.apply(clientId, amount, BalanceTransactionType.Deposit, null, idempotencyKey);
   }
 
   /** Ручное списание админом (коррекция баланса). Не уводит баланс в минус. */
   @Transactional()
-  adminDebit(clientId: string, amount: Money): Promise<Client> {
+  adminDebit(clientId: string, amount: Money, idempotencyKey: string | null = null): Promise<ApplyResult> {
     return this.apply(
       clientId,
       Money.zero().subtract(amount),
       BalanceTransactionType.AdminDebit,
       null,
-      null,
+      idempotencyKey,
     );
   }
 
   /** Списание за заказ. */
   @Transactional()
-  charge(clientId: string, amount: Money, orderId: string): Promise<Client> {
-    return this.apply(
+  async charge(clientId: string, amount: Money, orderId: string): Promise<Client> {
+    const { client } = await this.apply(
       clientId,
       Money.zero().subtract(amount),
       BalanceTransactionType.OrderCharge,
       orderId,
       `charge:${orderId}`,
     );
+    return client;
   }
 
   /** Возврат при отмене заказа. */
   @Transactional()
-  refund(clientId: string, amount: Money, orderId: string): Promise<Client> {
-    return this.apply(
+  async refund(clientId: string, amount: Money, orderId: string): Promise<Client> {
+    const { client } = await this.apply(
       clientId,
       amount,
       BalanceTransactionType.OrderRefund,
       orderId,
       `refund:${orderId}`,
     );
+    return client;
   }
 
   private async apply(
@@ -68,10 +70,19 @@ export class BalanceService {
     type: BalanceTransactionType,
     orderId: string | null,
     idempotencyKey: string | null,
-  ): Promise<Client> {
+  ): Promise<ApplyResult> {
     const client = await this.clients.findByIdForUpdate(clientId);
     if (!client) {
       throw new NotFoundError('Клиент не найден');
+    }
+
+    // Идемпотентность: проверка под FOR UPDATE (строка клиента залочена) — повторная команда
+    // с тем же ключом не применяется второй раз; возвращаем уже зафиксированный баланс.
+    if (idempotencyKey) {
+      const existing = await this.ledger.findByIdempotencyKey(idempotencyKey);
+      if (existing) {
+        return { client, applied: false };
+      }
     }
 
     const newBalance = client.balance.add(delta);
@@ -89,6 +100,12 @@ export class BalanceService {
       orderId,
       idempotencyKey,
     });
-    return client;
+    return { client, applied: true };
   }
+}
+
+/** Результат проводки: клиент после операции и флаг, была ли она реально применена (vs дедуп). */
+export interface ApplyResult {
+  client: Client;
+  applied: boolean;
 }

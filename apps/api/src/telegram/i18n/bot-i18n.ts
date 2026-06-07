@@ -252,6 +252,7 @@ const dict = {
   deposit_ask_client: { ru: 'Введите telegram_id или телефон клиента:', uz: 'Mijozning telegram_id yoki telefonini kiriting:' },
   deposit_ask_amount: { ru: 'Введите сумму пополнения:', uz: 'To‘ldirish summasini kiriting:' },
   deposit_client_found: { ru: 'Клиент', uz: 'Mijoz' },
+  deposit_choose_client: { ru: 'Найдено несколько — выберите клиента:', uz: 'Bir nechta topildi — mijozni tanlang:' },
   deposit_done: { ru: 'Баланс пополнен ✅', uz: 'Balans to‘ldirildi ✅' },
   deposit_history: { ru: 'История пополнений:', uz: 'To‘ldirishlar tarixi:' },
 

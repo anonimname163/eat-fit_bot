@@ -1,4 +1,4 @@
-import { IsNumber, IsPositive, IsUUID, Max } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, IsUUID, Max } from 'class-validator';
 
 // Верхний предел одной операции с балансом (анти-«толстый палец»/абьюз). numeric(12,2) в БД
 // держит до ~10 млрд; ставим разумный бизнес-потолок заметно ниже.
@@ -12,4 +12,9 @@ export class CreateDepositDto {
   @IsPositive()
   @Max(MAX_BALANCE_OP)
   amount!: number;
+
+  // Ключ идемпотентности (UUID): повторная отправка с тем же ключом не применится дважды.
+  @IsOptional()
+  @IsUUID()
+  idempotencyKey?: string;
 }
