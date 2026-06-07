@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Update, Action, Command, Ctx } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import type { Context } from 'telegraf';
-import { Category, OrderStatus } from '@eatfit/shared';
+import { Category, OrderStatus, Role } from '@eatfit/shared';
 import { ClientRepository } from '../../clients/clients.repository';
 import { Client } from '../../clients/entities/client.entity';
 import { MenuRepository } from '../../menu/menu.repository';
@@ -339,7 +339,7 @@ export class StaffUpdate {
     }
   }
 
-  @Action(/^ord:set:(.+):([a-z]+)$/)
+  @Action(/^ord:set:(.+?):([a-z]+)(?::([a-z]+))?$/)
   async onTransition(@Ctx() ctx: Context): Promise<void> {
     const cbId = (ctx.callbackQuery as { id?: string } | undefined)?.id;
     if (cbId && this.state.isDuplicateCallback(cbId, Date.now())) {
@@ -350,6 +350,7 @@ export class StaffUpdate {
     const match = (ctx as Context & { match?: RegExpExecArray }).match;
     const orderId = match?.[1] ?? '';
     const target = match?.[2] ?? '';
+    const viewRoleStr = match?.[3];
 
     const client = await this.clients.findByTelegramId(String(ctx.from?.id));
     const lang: Lang = client?.language ?? ('ru' as Lang);
@@ -359,11 +360,18 @@ export class StaffUpdate {
       return;
     }
 
+    // Роль-аудитория карточки (из callback): по ней перестраиваем кнопки, чтобы у поваров
+    // они пропадали после «Готово». Фолбэк — роль нажавшего (для старых сообщений/панелей).
+    const viewRole: Role | undefined =
+      viewRoleStr && Object.values(Role).includes(viewRoleStr as Role)
+        ? (viewRoleStr as Role)
+        : client?.role;
+
     try {
       const updated = await this.orders.transition(orderId, target as OrderStatus);
       await ctx.answerCbQuery(statusText(lang, updated.status));
-      // Перестраиваем кнопки под новый статус (если переходов больше нет — убираем).
-      const buttons = client ? this.staff.actionButtons(lang, updated, client.role) : [];
+      // Перестраиваем кнопки под новый статус для роли карточки (нет переходов — убираем).
+      const buttons = viewRole ? this.staff.actionButtons(lang, updated, viewRole) : [];
       try {
         await ctx.editMessageReplyMarkup(
           buttons.length ? { inline_keyboard: [buttons] } : undefined,

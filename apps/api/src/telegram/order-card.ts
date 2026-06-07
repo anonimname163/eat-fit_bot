@@ -38,7 +38,10 @@ export function orderActionButtons(
       target === OrderStatus.Cancelled
         ? t(lang, 'btn_cancel_order')
         : `▶️ ${statusText(lang, target)}`;
-    return Markup.button.callback(label, `ord:set:${order.id}:${target}`);
+    // Роль-аудитория карточки зашита в callback, чтобы после смены статуса кнопки
+    // перестраивались под ту же роль (напр. у поваров пропадают после «Готово»),
+    // а не под роль нажавшего. На авторизацию не влияет — её проверяет домен по CLS.
+    return Markup.button.callback(label, `ord:set:${order.id}:${target}:${role}`);
   });
 }
 
