@@ -28,7 +28,8 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   const port = config.get<number>('port') ?? 3000;
-  await app.listen(port);
+  // Слушаем на всех интерфейсах — обязательно для Railway/контейнеров (не только localhost).
+  await app.listen(port, '0.0.0.0');
   Logger.log(`Eat&fit API запущен на порту ${port}`, 'Bootstrap');
 }
 
