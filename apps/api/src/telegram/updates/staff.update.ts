@@ -129,6 +129,25 @@ export class StaffUpdate {
     await this.menuAdmin.doDelete(ctx, c, this.cbArg(ctx, 1));
   }
 
+  // ───────────────────────────── утилита настройки групп ─────────────────────────────
+
+  /**
+   * Показать ID текущего чата — нужно для настройки COOK_GROUP_ID / COURIER_GROUP_ID.
+   * Работает в любом чате (в т.ч. группе): добавьте бота в группу и вызовите /chatid.
+   */
+  @Command('chatid')
+  async onChatId(@Ctx() ctx: Context): Promise<void> {
+    const chat = ctx.chat;
+    if (!chat) return;
+    const title = 'title' in chat ? chat.title : ('username' in chat ? chat.username : '') ?? '';
+    await ctx.reply(
+      [`🆔 <b>chat_id:</b> <code>${esc(String(chat.id))}</code>`, `type: ${esc(chat.type)}`, title ? `«${esc(title)}»` : '']
+        .filter(Boolean)
+        .join('\n'),
+      { parse_mode: 'HTML' },
+    );
+  }
+
   // ───────────────────────────── вход в админ-панель ─────────────────────────────
 
   @Command('admin')
