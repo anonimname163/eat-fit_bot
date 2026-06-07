@@ -36,6 +36,8 @@ desktop.ini
 # временные / личное
 *.tmp
 REFACTOR-PROGRESS.md
+txt.txt
+TXT.TXT
 
 # BMad: артефакты не трекаем, КРОМЕ чек-листа приёмки
 _bmad/

@@ -49,7 +49,10 @@ import { createBotContextMiddleware } from './bot-context.middleware';
         clients: ClientRepository,
       ) => ({
         token: config.get<string>('bot.token') as string,
-        launchOptions: config.get<boolean>('bot.enabled') === false ? false : undefined,
+        // Авто-запуск выключаем ВСЕГДА: nestjs-telegraf зовёт bot.launch() без catch, и его
+        // reject (например 409 при втором polling) становится unhandledRejection и роняет
+        // процесс (Node ≥15). Бота запускаем сами в BotCommandsService с обработкой ошибки.
+        launchOptions: false,
         // CLS+actor контекст для каждого апдейта — до выполнения хендлеров.
         middlewares: [createBotContextMiddleware(cls, clients, config)],
       }),

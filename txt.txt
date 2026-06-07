@@ -1,1 +1,0 @@
-[ERROR] sendPhoto в меню (item 2 ): {"ok":false,"error_code":400,"description":"Bad Request: wrong file identifier/HTTP URL specified"}

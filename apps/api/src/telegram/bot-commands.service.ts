@@ -21,6 +21,13 @@ export class BotCommandsService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     if (this.config.get<boolean>('bot.enabled') === false) return;
 
+    // Запуск long polling. НЕ await — launch() резолвится только при остановке бота.
+    // .catch обязателен: иначе reject (409 «terminated by other getUpdates», неверный токен,
+    // сеть) станет unhandledRejection и уронит весь процесс (Node ≥15) → API недоступен.
+    void this.bot
+      .launch()
+      .catch((err) => this.logger.error(`Бот не запущен (API работает дальше): ${(err as Error).message}`));
+
     const base = [
       { command: 'start', description: 'Главное меню' },
       { command: 'menu', description: 'Меню ресторана' },
