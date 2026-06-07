@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Update, Start, Command, Action, On, Ctx } from 'nestjs-telegraf';
+import { Update, Start, Command, Action, On, Ctx, Next } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import type { Context } from 'telegraf';
 import type { Message, InlineKeyboardButton } from 'telegraf/typings/core/types/typegram';
@@ -17,6 +17,7 @@ import { DomainError, InsufficientBalanceError } from '../../common/errors/domai
 import { BotStateService } from '../bot-state.service';
 import { BotUiService } from '../bot-ui.service';
 import { BotStaffService } from '../bot-staff.service';
+import { BotMenuAdminService } from '../bot-menu-admin.service';
 import {
   Lang,
   t,
@@ -50,6 +51,7 @@ export class ClientUpdate {
     private readonly staff: BotStaffService,
     private readonly settings: SettingsService,
     private readonly deposits: DepositsService,
+    private readonly menuAdmin: BotMenuAdminService,
   ) {}
 
   // ─────────────────────────── /start + deep link ───────────────────────────
@@ -285,12 +287,46 @@ export class ClientUpdate {
     if (phone) await this.applyPhone(ctx, session.flow, String(phone));
   }
 
-  @On('text')
-  async onText(@Ctx() ctx: Context): Promise<void> {
+  @On('photo')
+  async onPhoto(@Ctx() ctx: Context): Promise<void> {
     const from = ctx.from;
     if (!from) return;
+    const session = this.state.getSession(from.id);
+    if (session?.flow !== 'menu_add' && session?.flow !== 'menu_edit') return;
+    const client = await this.clients.findByTelegramId(String(from.id));
+    if (!client || !this.ui.isAdmin(client)) return;
+    const photo = (ctx.message as Message.PhotoMessage | undefined)?.photo;
+    if (photo?.length) await this.menuAdmin.setPhoto(ctx, client, photo[photo.length - 1].file_id);
+  }
+
+  /** Текстовый шаг управления меню из админ-FSM (из общего роутера). */
+  private async menuFlowText(
+    ctx: Context,
+    flow: string,
+    step: string,
+    dishId: string | undefined,
+    text: string,
+  ): Promise<void> {
+    const from = ctx.from!;
+    const client = await this.clients.findByTelegramId(String(from.id));
+    if (!client || !this.ui.isAdmin(client)) {
+      this.state.clearSession(from.id);
+      return;
+    }
+    if (flow === 'menu_add') await this.menuAdmin.addText(ctx, client, step, text);
+    else if (dishId) await this.menuAdmin.editText(ctx, client, dishId, step, text);
+  }
+
+  @On('text')
+  async onText(@Ctx() ctx: Context, @Next() next: () => Promise<void>): Promise<void> {
+    const from = ctx.from;
+    // Команды (/start, /menu, /admin, ...) пробрасываем дальше — иначе этот общий
+    // text-хендлер «проглотит» их, и @Command/@Start не сработают (в т.ч. в StaffUpdate).
     const text = (this.text(ctx) ?? '').trim();
-    if (!text || text.startsWith('/')) return;
+    if (!from || !text || text.startsWith('/')) {
+      await next();
+      return;
+    }
 
     // 1) Активный диалог-FSM. Регистрация перехватывает любой ввод (меню тогда не
     //    показано). В прочих диалогах нажатие кнопки главного меню прерывает диалог.
@@ -300,6 +336,9 @@ export class ClientUpdate {
     if (!action && session?.flow === 'profile_edit') return void (await this.profileEditStep(ctx, session.step, text));
     if (!action && session?.flow === 'settings_edit') return void (await this.settingsEditStep(ctx, session.step, text));
     if (!action && session?.flow === 'deposit') return void (await this.depositStep(ctx, session.step, text));
+    if (!action && (session?.flow === 'menu_add' || session?.flow === 'menu_edit')) {
+      return void (await this.menuFlowText(ctx, session.flow, session.step, session.data.dishId as string | undefined, text));
+    }
 
     // 2) Кнопки главного меню (учёт обоих языков) — отменяют незавершённый диалог.
     if (!action) return;

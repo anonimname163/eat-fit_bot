@@ -15,6 +15,7 @@ import { TelegramNotifier } from './telegram-notifier';
 import { BotStateService } from './bot-state.service';
 import { BotUiService } from './bot-ui.service';
 import { BotStaffService } from './bot-staff.service';
+import { BotMenuAdminService } from './bot-menu-admin.service';
 import { BotCommandsService } from './bot-commands.service';
 import { ClientUpdate } from './updates/client.update';
 import { StaffUpdate } from './updates/staff.update';
@@ -60,6 +61,7 @@ import { createBotContextMiddleware } from './bot-context.middleware';
     BotStateService,
     BotUiService,
     BotStaffService,
+    BotMenuAdminService,
     BotCommandsService,
     ClientUpdate,
     StaffUpdate,

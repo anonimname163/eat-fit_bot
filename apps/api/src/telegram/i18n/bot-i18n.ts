@@ -239,6 +239,11 @@ const dict = {
   field_desc_uz: { ru: '📄 Описание (UZ)', uz: '📄 Tavsif (UZ)' },
   field_category: { ru: '🗂 Категория', uz: '🗂 Kategoriya' },
   field_price: { ru: '💵 Цена', uz: '💵 Narx' },
+  field_photo: { ru: '🖼 Фото', uz: '🖼 Rasm' },
+  dish_del_confirm: { ru: 'Удалить блюдо?', uz: 'Taom o‘chirilsinmi?' },
+  btn_yes: { ru: '✅ Да', uz: '✅ Ha' },
+  btn_no: { ru: '↩️ Нет', uz: '↩️ Yo‘q' },
+  tag_hidden: { ru: 'скрыто', uz: 'yashirilgan' },
   edit_saved: { ru: 'Изменения сохранены ✅', uz: 'O‘zgarishlar saqlandi ✅' },
 
   users_ask_query: {

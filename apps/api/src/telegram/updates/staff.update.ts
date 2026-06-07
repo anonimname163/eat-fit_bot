@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Update, Action, Command, Ctx } from 'nestjs-telegraf';
 import { Markup } from 'telegraf';
 import type { Context } from 'telegraf';
-import { OrderStatus } from '@eatfit/shared';
+import { Category, OrderStatus } from '@eatfit/shared';
 import { ClientRepository } from '../../clients/clients.repository';
 import { Client } from '../../clients/entities/client.entity';
 import { MenuRepository } from '../../menu/menu.repository';
@@ -15,6 +15,7 @@ import { DomainError } from '../../common/errors/domain-error';
 import { BotStateService } from '../bot-state.service';
 import { BotStaffService } from '../bot-staff.service';
 import { BotUiService } from '../bot-ui.service';
+import { BotMenuAdminService } from '../bot-menu-admin.service';
 import { t, esc, pick, formatMoney, statusText, Lang } from '../i18n/bot-i18n';
 
 /**
@@ -37,6 +38,7 @@ export class StaffUpdate {
     private readonly settings: SettingsService,
     private readonly menu: MenuRepository,
     private readonly config: ConfigService,
+    private readonly menuAdmin: BotMenuAdminService,
   ) {}
 
   /** Резолв админа из апдейта; иначе гасит callback и возвращает null. */
@@ -47,6 +49,84 @@ export class StaffUpdate {
       return null;
     }
     return client;
+  }
+
+  private cbArg(ctx: Context, i: number): string {
+    return (ctx as Context & { match?: RegExpExecArray }).match?.[i] ?? '';
+  }
+
+  // ───────────────────────────── управление меню (FR-M3/M4) ─────────────────────────────
+
+  @Action('amenu:list')
+  async onMenuList(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.showList(ctx, c);
+  }
+
+  @Action('amenu:add')
+  async onMenuAdd(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.startAdd(ctx, c);
+  }
+
+  @Action(/^amenu:cat:(main|drink|dessert)$/)
+  async onMenuAddCat(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.setAddCategory(ctx, c, this.cbArg(ctx, 1) as Category);
+  }
+
+  @Action(/^amenu:edit:(.+)$/)
+  async onMenuEdit(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.startEdit(ctx, c, this.cbArg(ctx, 1));
+  }
+
+  @Action(/^amenu:fld:(.+):([a-z_]+)$/)
+  async onMenuField(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.chooseField(ctx, c, this.cbArg(ctx, 1), this.cbArg(ctx, 2));
+  }
+
+  @Action(/^amenu:ecat:(.+):(main|drink|dessert)$/)
+  async onMenuEditCat(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.setEditCategory(ctx, c, this.cbArg(ctx, 1), this.cbArg(ctx, 2) as Category);
+  }
+
+  @Action(/^amenu:toggle:(.+)$/)
+  async onMenuToggle(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.toggle(ctx, c, this.cbArg(ctx, 1));
+  }
+
+  @Action(/^amenu:del:(.+)$/)
+  async onMenuDel(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.confirmDelete(ctx, c, this.cbArg(ctx, 1));
+  }
+
+  @Action(/^amenu:delyes:(.+)$/)
+  async onMenuDelYes(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.doDelete(ctx, c, this.cbArg(ctx, 1));
   }
 
   // ───────────────────────────── вход в админ-панель ─────────────────────────────

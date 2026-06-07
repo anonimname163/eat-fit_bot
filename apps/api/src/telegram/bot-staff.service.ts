@@ -56,6 +56,7 @@ export class BotStaffService {
           Markup.button.callback(t(lang, 'deposit_add'), 'admin:deposit'),
           Markup.button.callback(t(lang, 'admin_gen_post'), 'admin:post'),
         ],
+        [Markup.button.callback(t(lang, 'admin_menu_mgmt'), 'amenu:list')],
       ]),
     );
     await this.renderOrders(
