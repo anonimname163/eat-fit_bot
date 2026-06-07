@@ -56,6 +56,31 @@ export class DepositsService {
     return { deposit: new DepositResponseDto(deposit), balance: updated.balance.toString() };
   }
 
+  /** Ручное списание с баланса админом (коррекция). Только ledger-проводка, не Deposit. */
+  @Transactional()
+  async adminWithdraw(dto: CreateDepositDto): Promise<{ balance: string }> {
+    const target = await this.clients.findById(dto.clientId);
+    if (!target) {
+      throw new NotFoundError('Клиент не найден');
+    }
+
+    const amount = Money.fromMajor(dto.amount);
+    const updated = await this.balance.adminDebit(target.id, amount);
+
+    if (target.telegramId) {
+      await this.notifier?.notifyUser(
+        target.telegramId,
+        `С вашего баланса списано ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
+      );
+    }
+    await this.notifier?.notifyGroup(
+      NotifyGroup.Admins,
+      `Списание: ${target.name} (−${amount.toString()}). Баланс: ${updated.balance.toString()}.`,
+    );
+
+    return { balance: updated.balance.toString() };
+  }
+
   /** История пополнений текущего клиента. */
   async myHistory(): Promise<DepositResponseDto[]> {
     const actor = this.actorCtx.getOrThrow();

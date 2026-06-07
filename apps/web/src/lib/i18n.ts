@@ -81,6 +81,7 @@ const dict = {
   adm_search_user: { ru: 'Телефон / username / id', uz: 'Telefon / username / id' },
   adm_role: { ru: 'Роль', uz: 'Rol' },
   adm_deposit: { ru: 'Пополнить', uz: 'To‘ldirish' },
+  adm_withdraw: { ru: 'Списать', uz: 'Yechish' },
   adm_amount: { ru: 'Сумма', uz: 'Summa' },
   adm_deposit_done: { ru: 'Баланс пополнен', uz: 'Balans to‘ldirildi' },
   adm_role_changed: { ru: 'Роль изменена', uz: 'Rol o‘zgartirildi' },

@@ -39,4 +39,5 @@ export enum BalanceTransactionType {
   Deposit = 'deposit', // пополнение админом (+)
   OrderCharge = 'order_charge', // списание за заказ (−)
   OrderRefund = 'order_refund', // возврат при отмене (+)
+  AdminDebit = 'admin_debit', // ручное списание админом (−)
 }

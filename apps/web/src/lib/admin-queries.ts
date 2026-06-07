@@ -119,6 +119,14 @@ export function useDeposit() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }
+export function useWithdraw() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { clientId: string; amount: number }) =>
+      api<{ balance: string }>('/admin/withdrawals', { method: 'POST', body: v }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  });
+}
 
 /* ── настройки ── */
 export function useSettings() {

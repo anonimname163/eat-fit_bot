@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Role } from '@eatfit/shared';
-import { useAdminUsers, useChangeRole, useDeposit } from '@/lib/admin-queries';
+import { useAdminUsers, useChangeRole, useDeposit, useWithdraw } from '@/lib/admin-queries';
 import { useT, type I18nKey } from '@/lib/i18n';
 import { formatMoney } from '@/lib/format';
 
@@ -19,6 +19,7 @@ export function AdminUsers() {
   const { data: users } = useAdminUsers(q);
   const changeRole = useChangeRole();
   const deposit = useDeposit();
+  const withdraw = useWithdraw();
   const [amounts, setAmounts] = useState<Record<string, string>>({});
 
   return (
@@ -75,6 +76,18 @@ export function AdminUsers() {
               }
             >
               {t('adm_deposit')}
+            </button>
+            <button
+              className="btn"
+              disabled={withdraw.isPending || !Number(amounts[u.id])}
+              onClick={() =>
+                withdraw.mutate(
+                  { clientId: u.id, amount: Number(amounts[u.id]) },
+                  { onSuccess: () => setAmounts({ ...amounts, [u.id]: '' }) },
+                )
+              }
+            >
+              {t('adm_withdraw')}
             </button>
           </div>
         </div>

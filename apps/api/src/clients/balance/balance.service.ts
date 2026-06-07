@@ -26,6 +26,18 @@ export class BalanceService {
     return this.apply(clientId, amount, BalanceTransactionType.Deposit, null, null);
   }
 
+  /** Ручное списание админом (коррекция баланса). Не уводит баланс в минус. */
+  @Transactional()
+  adminDebit(clientId: string, amount: Money): Promise<Client> {
+    return this.apply(
+      clientId,
+      Money.zero().subtract(amount),
+      BalanceTransactionType.AdminDebit,
+      null,
+      null,
+    );
+  }
+
   /** Списание за заказ. */
   @Transactional()
   charge(clientId: string, amount: Money, orderId: string): Promise<Client> {

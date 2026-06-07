@@ -21,6 +21,13 @@ export class DepositsController {
     return this.deposits.adminDeposit(dto);
   }
 
+  /** Ручное списание с баланса админом. */
+  @Roles(Role.Admin)
+  @Post('admin/withdrawals')
+  withdraw(@Body() dto: CreateDepositDto) {
+    return this.deposits.adminWithdraw(dto);
+  }
+
   /** История пополнений клиента (админ). */
   @Roles(Role.Admin)
   @Get('admin/clients/:id/deposits')
