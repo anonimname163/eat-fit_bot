@@ -16,15 +16,20 @@ export class MenuRepository extends TransactionalRepository<MenuItem> {
 
   /**
    * Витрина: только активные, опционально по категории и по дню недели (ISO 1..7).
-   * День учитывается, только если задан: показываем блюда без ограничения по дням
-   * (пустой массив) ИЛИ те, у кого день указан.
+   * Правило дня (если day задан): напитки и десерты показываются ВСЕГДА; основные блюда —
+   * только если сегодняшний день в их списке days (основное без дней = каждый день).
    */
   findActive(category?: Category, day?: number): Promise<MenuItem[]> {
     const qb = this.repo
       .createQueryBuilder('m')
       .where('m.isActive = :active', { active: true });
     if (category) qb.andWhere('m.category = :category', { category });
-    if (day) qb.andWhere('(cardinality(m.days) = 0 OR :day = ANY(m.days))', { day });
+    if (day) {
+      qb.andWhere(
+        '(m.category <> :mainCat OR cardinality(m.days) = 0 OR :day = ANY(m.days))',
+        { mainCat: Category.Main, day },
+      );
+    }
     return qb.orderBy('m.category', 'ASC').addOrderBy('m.createdAt', 'DESC').getMany();
   }
 
