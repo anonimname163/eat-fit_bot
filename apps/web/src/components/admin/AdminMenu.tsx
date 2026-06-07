@@ -57,6 +57,7 @@ export function AdminMenu() {
 
   // Какому блюду показываем предпросмотр поста (id) — null если скрыт.
   const [postFor, setPostFor] = useState<string | null>(null);
+  const [q, setQ] = useState('');
 
   const deepLink = (id: string): string | null =>
     config?.botUsername ? `https://t.me/${config.botUsername}?start=item_${id}` : null;
@@ -227,12 +228,25 @@ export function AdminMenu() {
     );
   }
 
+  const needle = q.trim().toLowerCase();
+  const filtered = needle
+    ? items?.filter((it) => `${it.nameRu} ${it.nameUz}`.toLowerCase().includes(needle))
+    : items;
+
   return (
     <div>
       <button className="btn btn-primary btn-block" onClick={openNew} style={{ marginBottom: 12 }}>
         {t('adm_add_dish')}
       </button>
-      {items?.map((it) => (
+      <input
+        className="input"
+        placeholder={t('search_ph')}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        style={{ marginBottom: 12 }}
+      />
+      {needle && !filtered?.length && <div className="center">{t('nothing_found')}</div>}
+      {filtered?.map((it) => (
         <div className="card" key={it.id}>
           <div className="dish-name">
             {it.nameRu}

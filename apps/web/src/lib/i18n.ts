@@ -19,6 +19,8 @@ const dict = {
 
   // меню/корзина
   menu_empty: { ru: 'Меню пока пустое', uz: 'Menyu hozircha bo‘sh' },
+  search_ph: { ru: 'Поиск…', uz: 'Qidirish…' },
+  nothing_found: { ru: 'Ничего не найдено', uz: 'Hech narsa topilmadi' },
   cat_main: { ru: 'Основные блюда', uz: 'Asosiy taomlar' },
   cat_drink: { ru: 'Напитки', uz: 'Ichimliklar' },
   cat_dessert: { ru: 'Десерты', uz: 'Shirinliklar' },

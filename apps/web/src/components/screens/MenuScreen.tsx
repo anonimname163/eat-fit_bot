@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Category, Language } from '@eatfit/shared';
 import { useMenu, useCart, useAddToCart, useSetQuantity } from '@/lib/queries';
 import { useAuthStore } from '@/store/auth.store';
@@ -22,9 +23,17 @@ export function MenuScreen() {
   const add = useAddToCart();
   const setQty = useSetQuantity();
   const busy = add.isPending || setQty.isPending;
+  const [q, setQ] = useState('');
 
   if (isLoading) return <div className="center">{t('loading')}</div>;
   if (!menu?.length) return <div className="center">{t('menu_empty')}</div>;
+
+  const needle = q.trim().toLowerCase();
+  const filtered = needle
+    ? menu.filter((i) =>
+        `${i.nameRu} ${i.nameUz}`.toLowerCase().includes(needle),
+      )
+    : menu;
 
   const qtyOf = (id: string) => cart?.items.find((i) => i.menuItemId === id)?.quantity ?? 0;
 
@@ -37,8 +46,16 @@ export function MenuScreen() {
   return (
     <div>
       <h2>{t('nav_menu')}</h2>
+      <input
+        className="input"
+        placeholder={t('search_ph')}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        style={{ marginBottom: 12 }}
+      />
+      {needle && !filtered.length && <div className="center">{t('nothing_found')}</div>}
       {CATS.map(({ cat, key }) => {
-        const items = menu.filter((i) => i.category === cat);
+        const items = filtered.filter((i) => i.category === cat);
         if (!items.length) return null;
         return (
           <div key={cat}>

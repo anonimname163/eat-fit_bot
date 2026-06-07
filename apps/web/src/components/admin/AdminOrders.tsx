@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { OrderStatus } from '@eatfit/shared';
 import { useAdminOrders, useTransition } from '@/lib/admin-queries';
 import { useT, useStatusText, type I18nKey } from '@/lib/i18n';
@@ -33,13 +34,39 @@ export function AdminOrders() {
   const st = useStatusText();
   const { data: orders, isLoading } = useAdminOrders();
   const tr = useTransition();
+  const [q, setQ] = useState('');
 
   if (isLoading) return <div className="center">{t('loading')}</div>;
   if (!orders?.length) return <div className="center">{t('no_orders')}</div>;
 
+  const needle = q.trim().toLowerCase();
+  const filtered = needle
+    ? orders.filter((o) =>
+        [
+          o.id,
+          o.customerName ?? '',
+          o.customerPhone ?? '',
+          o.address,
+          st(o.status),
+          o.items.map((i) => i.nameRu).join(' '),
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(needle),
+      )
+    : orders;
+
   return (
     <div>
-      {orders.map((o) => {
+      <input
+        className="input"
+        placeholder={t('search_ph')}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        style={{ marginBottom: 12 }}
+      />
+      {needle && !filtered.length && <div className="center">{t('nothing_found')}</div>}
+      {filtered.map((o) => {
         const actions = NEXT[o.status];
         return (
           <div className="card" key={o.id}>
