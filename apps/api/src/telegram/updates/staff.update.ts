@@ -106,6 +106,22 @@ export class StaffUpdate {
     await this.menuAdmin.setEditCategory(ctx, c, this.cbArg(ctx, 1), this.cbArg(ctx, 2) as Category);
   }
 
+  @Action(/^amenu:days:(.+)$/)
+  async onMenuDays(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.showDaysEditor(ctx, c, this.cbArg(ctx, 1));
+  }
+
+  @Action(/^amenu:dayt:(.+):(\d)$/)
+  async onMenuDayToggle(@Ctx() ctx: Context): Promise<void> {
+    const c = await this.requireAdmin(ctx);
+    if (!c) return;
+    await ctx.answerCbQuery();
+    await this.menuAdmin.toggleDay(ctx, c, this.cbArg(ctx, 1), Number(this.cbArg(ctx, 2)));
+  }
+
   @Action(/^amenu:toggle:(.+)$/)
   async onMenuToggle(@Ctx() ctx: Context): Promise<void> {
     const c = await this.requireAdmin(ctx);

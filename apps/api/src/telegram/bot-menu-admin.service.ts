@@ -175,9 +175,55 @@ export class BotMenuAdminService {
           Markup.button.callback(t(lang, 'field_category'), `amenu:fld:${dishId}:category`),
           Markup.button.callback(t(lang, 'field_price'), `amenu:fld:${dishId}:price`),
         ],
-        [Markup.button.callback(t(lang, 'field_photo'), `amenu:fld:${dishId}:photo`)],
+        [
+          Markup.button.callback(t(lang, 'field_photo'), `amenu:fld:${dishId}:photo`),
+          Markup.button.callback(t(lang, 'field_days'), `amenu:days:${dishId}`),
+        ],
       ]),
     );
+  }
+
+  // ───────────────────────── дни недели ─────────────────────────
+
+  /** Клавиатура выбора дней: ✅/☐ по каждому дню + «каждый день»/«готово». */
+  private daysKeyboard(lang: Lang, dishId: string, days: number[]) {
+    const dayBtn = (d: number) =>
+      Markup.button.callback(
+        `${days.includes(d) ? '✅' : '☐'} ${t(lang, `day_${d}` as Parameters<typeof t>[1])}`,
+        `amenu:dayt:${dishId}:${d}`,
+      );
+    return Markup.inlineKeyboard([
+      [dayBtn(1), dayBtn(2), dayBtn(3), dayBtn(4)],
+      [dayBtn(5), dayBtn(6), dayBtn(7)],
+      [
+        Markup.button.callback(t(lang, 'days_clear'), `amenu:dayt:${dishId}:0`),
+        Markup.button.callback(t(lang, 'btn_done'), 'amenu:list'),
+      ],
+    ]);
+  }
+
+  async showDaysEditor(ctx: Context, client: Client, dishId: string): Promise<void> {
+    const lang = client.language;
+    const item = await this.menu.getOne(dishId);
+    await ctx.reply(t(lang, 'days_choose'), this.daysKeyboard(lang, dishId, item.days));
+  }
+
+  /** Переключить день (0 = очистить → каждый день). Сразу сохраняет и перерисовывает кнопки. */
+  async toggleDay(ctx: Context, client: Client, dishId: string, day: number): Promise<void> {
+    const lang = client.language;
+    const item = await this.menu.getOne(dishId);
+    const days =
+      day === 0
+        ? []
+        : item.days.includes(day)
+          ? item.days.filter((d) => d !== day)
+          : [...item.days, day].sort((a, b) => a - b);
+    await this.menu.update(dishId, { days });
+    try {
+      await ctx.editMessageReplyMarkup(this.daysKeyboard(lang, dishId, days).reply_markup);
+    } catch {
+      /* «message is not modified» / нет прав — игнор */
+    }
   }
 
   async chooseField(ctx: Context, client: Client, dishId: string, field: string): Promise<void> {
