@@ -22,6 +22,9 @@ export function orderCardText(lang: Lang, order: OrderResponseDto): string {
     lines.push(`• ${esc(pick(lang, it.nameRu, it.nameUz))} ×${it.quantity}`);
   }
   lines.push(`${esc(t(lang, 'group_address'))}: ${esc(order.address)}`);
+  if (order.customerPhone) {
+    lines.push(`${esc(t(lang, 'group_phone'))}: ${esc(order.customerPhone)}`);
+  }
   lines.push(`💵 ${esc(formatMoney(order.total))} ${esc(t(lang, 'currency'))}`);
   if (order.comment) lines.push(`${esc(t(lang, 'group_comment'))}: ${esc(order.comment)}`);
   return lines.join('\n');

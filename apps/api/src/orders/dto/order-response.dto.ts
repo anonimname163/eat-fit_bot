@@ -19,9 +19,15 @@ export class OrderResponseDto {
   comment: string | null;
   paymentMethod: PaymentMethod;
   createdAt: Date;
+  customerName: string | null;
+  customerPhone: string | null;
   items: OrderItemView[];
 
-  constructor(order: Order, items: OrderItem[]) {
+  constructor(
+    order: Order,
+    items: OrderItem[],
+    customer?: { name: string | null; phone: string | null },
+  ) {
     this.id = order.id;
     this.status = order.status;
     this.total = order.total.toString();
@@ -29,6 +35,8 @@ export class OrderResponseDto {
     this.comment = order.comment;
     this.paymentMethod = order.paymentMethod;
     this.createdAt = order.createdAt;
+    this.customerName = customer?.name ?? null;
+    this.customerPhone = customer?.phone ?? null;
     this.items = items.map((it) => ({
       menuItemId: it.menuItemId,
       nameRu: it.menuItem?.nameRu ?? '',

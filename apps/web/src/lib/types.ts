@@ -60,6 +60,8 @@ export interface OrderDto {
   comment: string | null;
   paymentMethod: PaymentMethod;
   createdAt: string;
+  customerName?: string | null;
+  customerPhone?: string | null;
   items: OrderItemDto[];
 }
 

@@ -160,6 +160,11 @@ export class OrdersService {
   private async buildResponse(id: string): Promise<OrderResponseDto> {
     const order = await this.loadOrThrow(id);
     const items = await this.orders.getItems(id);
-    return new OrderResponseDto(order, items);
+    const client = await this.clients.findById(order.clientId);
+    return new OrderResponseDto(
+      order,
+      items,
+      client ? { name: client.name, phone: client.phone } : undefined,
+    );
   }
 }

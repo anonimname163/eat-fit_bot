@@ -48,6 +48,7 @@ export function AdminOrders() {
             </div>
             <div className="dish-desc">{o.items.map((i) => `${i.nameRu} ×${i.quantity}`).join(', ')}</div>
             <div className="dish-desc">{o.address}</div>
+            {o.customerPhone && <div className="dish-desc">📞 {o.customerPhone}</div>}
             <div className="row" style={{ marginTop: 6 }}>
               <span className="muted">{new Date(o.createdAt).toLocaleString()}</span>
               <strong>
