@@ -1,22 +1,12 @@
 'use client';
 
-import { OrderStatus } from '@eatfit/shared';
 import { useOrders } from '@/lib/queries';
-import { useT, type I18nKey } from '@/lib/i18n';
+import { useT, useStatusText } from '@/lib/i18n';
 import { formatMoney } from '@/lib/format';
-
-const STATUS_KEY: Record<OrderStatus, I18nKey> = {
-  [OrderStatus.Pending]: 'status_pending',
-  [OrderStatus.Confirmed]: 'status_confirmed',
-  [OrderStatus.Cooking]: 'status_cooking',
-  [OrderStatus.Ready]: 'status_ready',
-  [OrderStatus.Delivering]: 'status_delivering',
-  [OrderStatus.Done]: 'status_done',
-  [OrderStatus.Cancelled]: 'status_cancelled',
-};
 
 export function OrdersScreen() {
   const t = useT();
+  const st = useStatusText();
   const { data: orders, isLoading } = useOrders();
 
   if (isLoading) return <div className="center">{t('loading')}</div>;
@@ -31,7 +21,7 @@ export function OrdersScreen() {
             <strong>
               {t('order')} #{o.id.slice(0, 8)}
             </strong>
-            <span className="muted">{t(STATUS_KEY[o.status])}</span>
+            <span className="muted">{st(o.status)}</span>
           </div>
           <div className="dish-desc" style={{ marginTop: 6 }}>
             {o.items.map((it) => `${it.nameRu} ×${it.quantity}`).join(', ')}

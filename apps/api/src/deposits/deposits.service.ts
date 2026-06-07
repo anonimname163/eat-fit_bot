@@ -5,6 +5,7 @@ import { NotFoundError } from '../common/errors/domain-error';
 import { Money } from '../common/money/money';
 import { INotifier, NOTIFIER, NotifyGroup } from '../common/notifications/notifier';
 import { ClientRepository } from '../clients/clients.repository';
+import { Client } from '../clients/entities/client.entity';
 import { BalanceService } from '../clients/balance/balance.service';
 import { DepositRepository } from './deposit.repository';
 import { CreateDepositDto } from './dto/create-deposit.dto';
@@ -41,17 +42,7 @@ export class DepositsService {
       adminTelegramId: admin.telegramId,
     });
     const updated = await this.balance.deposit(target.id, amount);
-
-    if (target.telegramId) {
-      await this.notifier?.notifyUser(
-        target.telegramId,
-        `Ваш баланс пополнен на ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
-      );
-    }
-    await this.notifier?.notifyGroup(
-      NotifyGroup.Admins,
-      `Пополнение: ${target.name} (+${amount.toString()}). Баланс: ${updated.balance.toString()}.`,
-    );
+    await this.notifyBalanceChange(target, amount, updated, 'deposit');
 
     return { deposit: new DepositResponseDto(deposit), balance: updated.balance.toString() };
   }
@@ -66,19 +57,33 @@ export class DepositsService {
 
     const amount = Money.fromMajor(dto.amount);
     const updated = await this.balance.adminDebit(target.id, amount);
-
-    if (target.telegramId) {
-      await this.notifier?.notifyUser(
-        target.telegramId,
-        `С вашего баланса списано ${amount.toString()}. Текущий баланс: ${updated.balance.toString()}.`,
-      );
-    }
-    await this.notifier?.notifyGroup(
-      NotifyGroup.Admins,
-      `Списание: ${target.name} (−${amount.toString()}). Баланс: ${updated.balance.toString()}.`,
-    );
+    await this.notifyBalanceChange(target, amount, updated, 'debit');
 
     return { balance: updated.balance.toString() };
+  }
+
+  /** Уведомить клиента и админ-группу об изменении баланса (общее для пополнения/списания). */
+  private async notifyBalanceChange(
+    target: Client,
+    amount: Money,
+    updated: Client,
+    direction: 'deposit' | 'debit',
+  ): Promise<void> {
+    const amt = amount.toString();
+    const bal = updated.balance.toString();
+    const userMsg =
+      direction === 'deposit'
+        ? `Ваш баланс пополнен на ${amt}. Текущий баланс: ${bal}.`
+        : `С вашего баланса списано ${amt}. Текущий баланс: ${bal}.`;
+    const adminMsg =
+      direction === 'deposit'
+        ? `Пополнение: ${target.name} (+${amt}). Баланс: ${bal}.`
+        : `Списание: ${target.name} (−${amt}). Баланс: ${bal}.`;
+
+    if (target.telegramId) {
+      await this.notifier?.notifyUser(target.telegramId, userMsg);
+    }
+    await this.notifier?.notifyGroup(NotifyGroup.Admins, adminMsg);
   }
 
   /** История пополнений текущего клиента. */

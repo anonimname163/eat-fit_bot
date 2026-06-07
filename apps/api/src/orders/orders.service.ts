@@ -16,6 +16,15 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderResponseDto } from './dto/order-response.dto';
 import { assertTransition } from './order-status.machine';
 
+/**
+ * При входе заказа в статус — какой группе уходит карточка с кнопками (data-driven, как FSM).
+ * Новое правило «статус → группа» добавляется записью здесь, без правки тела сервиса (OCP).
+ */
+const STATUS_AUDIENCE: Partial<Record<OrderStatus, { group: NotifyGroup; role: Role }>> = {
+  [OrderStatus.Pending]: { group: NotifyGroup.Cooks, role: Role.Cook },
+  [OrderStatus.Ready]: { group: NotifyGroup.Couriers, role: Role.Courier },
+};
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -81,8 +90,7 @@ export class OrdersService {
     this.cart.clear(clientId);
 
     const response = await this.buildResponse(order.id);
-    // Карточка заказа с кнопками статуса в группу поваров (роль Cook).
-    await this.notifier?.notifyGroupOrder(NotifyGroup.Cooks, response, Role.Cook);
+    await this.notifyAudience(response); // новый заказ (Pending) → группа поваров
 
     return response;
   }
@@ -141,12 +149,17 @@ export class OrdersService {
     }
 
     const response = await this.buildResponse(order.id);
-    // Готовый заказ уходит карточкой с кнопками в группу курьеров (роль Courier).
-    if (to === OrderStatus.Ready) {
-      await this.notifier?.notifyGroupOrder(NotifyGroup.Couriers, response, Role.Courier);
-    }
+    await this.notifyAudience(response); // напр. Ready → группа курьеров (data-driven)
 
     return response;
+  }
+
+  /** Карточка заказа с кнопками — группе, отвечающей за новый статус (см. STATUS_AUDIENCE). */
+  private async notifyAudience(order: OrderResponseDto): Promise<void> {
+    const audience = STATUS_AUDIENCE[order.status];
+    if (audience) {
+      await this.notifier?.notifyGroupOrder(audience.group, order, audience.role);
+    }
   }
 
   private async loadOrThrow(id: string): Promise<Order> {

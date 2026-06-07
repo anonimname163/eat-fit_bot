@@ -2,7 +2,7 @@
 
 import { OrderStatus } from '@eatfit/shared';
 import { useAdminOrders, useTransition } from '@/lib/admin-queries';
-import { useT, type I18nKey } from '@/lib/i18n';
+import { useT, useStatusText, type I18nKey } from '@/lib/i18n';
 import { formatMoney } from '@/lib/format';
 
 const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; key: I18nKey; primary?: boolean }[]>> = {
@@ -30,6 +30,7 @@ const NEXT: Partial<Record<OrderStatus, { status: OrderStatus; key: I18nKey; pri
 
 export function AdminOrders() {
   const t = useT();
+  const st = useStatusText();
   const { data: orders, isLoading } = useAdminOrders();
   const tr = useTransition();
 
@@ -44,7 +45,7 @@ export function AdminOrders() {
           <div className="card" key={o.id}>
             <div className="row">
               <strong>#{o.id.slice(0, 8)}</strong>
-              <span className="muted">{t(`status_${o.status}` as I18nKey)}</span>
+              <span className="muted">{st(o.status)}</span>
             </div>
             <div className="dish-desc">{o.items.map((i) => `${i.nameRu} ×${i.quantity}`).join(', ')}</div>
             <div className="dish-desc">{o.address}</div>

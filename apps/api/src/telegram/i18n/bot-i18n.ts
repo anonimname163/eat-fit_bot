@@ -1,4 +1,4 @@
-import { Language, OrderStatus, Category } from '@eatfit/shared';
+import { Language, OrderStatus, Category, orderStatusLabel } from '@eatfit/shared';
 
 /**
  * Тексты бота на двух языках (ru/uz). В хендлерах строки не хардкодим — берём только отсюда
@@ -141,14 +141,7 @@ const dict = {
   order_label: { ru: 'Заказ', uz: 'Buyurtma' },
   status_label: { ru: 'Статус', uz: 'Holati' },
 
-  // ---- Статусы ----
-  status_pending: { ru: 'Ожидает подтверждения', uz: 'Tasdiqlash kutilmoqda' },
-  status_confirmed: { ru: 'Принят', uz: 'Qabul qilindi' },
-  status_cooking: { ru: 'Готовится', uz: 'Tayyorlanmoqda' },
-  status_ready: { ru: 'Готово', uz: 'Tayyor' },
-  status_delivering: { ru: 'Доставляется', uz: 'Yetkazilmoqda' },
-  status_done: { ru: 'Доставлен', uz: 'Yetkazib berildi' },
-  status_cancelled: { ru: 'Отменён', uz: 'Bekor qilindi' },
+  // Статусы заказа — единый источник в libs/shared (orderStatusLabel), см. statusText().
 
   // ---- Уведомления клиенту ----
   notify_confirmed: { ru: 'Ваш заказ принят, готовим! 🍳', uz: 'Buyurtmangiz qabul qilindi, tayyorlayapmiz! 🍳' },
@@ -301,9 +294,9 @@ export function categoryName(lang: Lang, category: Category): string {
   return t(lang, map[category] ?? 'cat_main');
 }
 
-/** Локализованный текст статуса заказа. */
+/** Локализованный текст статуса заказа (единый источник — libs/shared). */
 export function statusText(lang: Lang, status: OrderStatus): string {
-  return t(lang, `status_${status}` as I18nKey);
+  return orderStatusLabel(lang, status);
 }
 
 /** Локализованный выбор из ru/uz пары (для названий/описаний блюд из БД). */

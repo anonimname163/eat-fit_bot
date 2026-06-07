@@ -1,4 +1,4 @@
-import { Language } from '@eatfit/shared';
+import { Language, OrderStatus, orderStatusLabel } from '@eatfit/shared';
 import { useAuthStore } from '@/store/auth.store';
 
 /** Лёгкий i18n фронта (RU/UZ). Язык — из профиля клиента (фолбэк ru). */
@@ -36,17 +36,10 @@ const dict = {
   order_placed: { ru: 'Заказ оформлен!', uz: 'Buyurtma qabul qilindi!' },
   insufficient: { ru: 'Недостаточно средств на балансе', uz: 'Balansda mablag‘ yetarli emas' },
 
-  // заказы/статусы
+  // заказы/статусы (тексты самих статусов — единый источник в libs/shared, см. useStatusText)
   no_orders: { ru: 'У вас пока нет заказов', uz: 'Sizda hozircha buyurtmalar yo‘q' },
   order: { ru: 'Заказ', uz: 'Buyurtma' },
   status: { ru: 'Статус', uz: 'Holat' },
-  status_pending: { ru: 'Ожидает', uz: 'Kutilmoqda' },
-  status_confirmed: { ru: 'Принят', uz: 'Qabul qilindi' },
-  status_cooking: { ru: 'Готовится', uz: 'Tayyorlanmoqda' },
-  status_ready: { ru: 'Готово', uz: 'Tayyor' },
-  status_delivering: { ru: 'Доставляется', uz: 'Yetkazilmoqda' },
-  status_done: { ru: 'Доставлен', uz: 'Yetkazildi' },
-  status_cancelled: { ru: 'Отменён', uz: 'Bekor qilindi' },
 
   // профиль/регистрация
   profile: { ru: 'Профиль', uz: 'Profil' },
@@ -135,4 +128,10 @@ export function translate(lang: Language, key: I18nKey): string {
 export function useT(): (key: I18nKey) => string {
   const lang = useAuthStore((s) => s.client?.language ?? Language.Ru);
   return (key: I18nKey) => translate(lang, key);
+}
+
+/** Хук локализации статуса заказа (единый источник — libs/shared/orderStatusLabel). */
+export function useStatusText(): (status: OrderStatus) => string {
+  const lang = useAuthStore((s) => s.client?.language ?? Language.Ru);
+  return (status: OrderStatus) => orderStatusLabel(lang, status);
 }
