@@ -13,9 +13,15 @@ async function bootstrap() {
   // Next-SPA. TODO(AR-11): корректный SPA-CSP (nonce/hash) на отдаче статики.
   app.use(helmet({ contentSecurityPolicy: false }));
 
-  // CORS строго под домен(ы) фронта; если не задано — открыто (dev).
+  // CORS строго под домен(ы) фронта. Если список не задан: в dev — открыто (удобно),
+  // в prod — ЗАКРЫТО (SPA отдаётся тем же сервером, same-origin, CORS ей не нужен).
+  // Иначе origin:true+credentials позволил бы любому сайту слать авторизованные запросы.
   const corsOrigins = config.get<string[]>('cors.origins') ?? [];
-  app.enableCors({ origin: corsOrigins.length > 0 ? corsOrigins : true, credentials: true });
+  const isProd = process.env.NODE_ENV === 'production';
+  app.enableCors({
+    origin: corsOrigins.length > 0 ? corsOrigins : !isProd,
+    credentials: true,
+  });
 
   // Весь API под /api — корень отдаёт SPA (ServeStaticModule). Бот идёт мимо HTTP.
   app.setGlobalPrefix('api');

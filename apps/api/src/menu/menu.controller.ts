@@ -36,6 +36,8 @@ export class MenuController {
       const bytes = await this.menu.loadPhotoBytes(id);
       if (bytes) {
         res.setHeader('Content-Type', bytes.mime);
+        // Анти-sniffing: браузер не должен переинтерпретировать байты как HTML/скрипт.
+        res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Cache-Control', 'public, max-age=3600');
         res.end(bytes.data);
         return;

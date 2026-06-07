@@ -24,6 +24,9 @@ import { SetActiveDto } from '../dto/set-active.dto';
 
 // Лимит размера загружаемого фото (байты).
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+// Белый список типов фото. ВАЖНО: только растровые — image/svg+xml исключён намеренно
+// (SVG может содержать <script> → stored-XSS, т.к. фото отдаётся с домена SPA, а CSP off).
+const ALLOWED_PHOTO_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Админ-управление меню (отдельный контроллер, не флажок внутри клиентского). */
 @Controller('admin/menu')
@@ -65,8 +68,8 @@ export class MenuAdminController {
     @UploadedFile() file?: Express.Multer.File,
   ) {
     if (!file) throw new BadRequestException('Файл не передан');
-    if (!file.mimetype?.startsWith('image/')) {
-      throw new BadRequestException('Допустимы только изображения');
+    if (!ALLOWED_PHOTO_MIME.includes(file.mimetype)) {
+      throw new BadRequestException('Допустимы только JPEG, PNG или WebP');
     }
     return this.menu.setPhoto(id, file.buffer, file.mimetype);
   }
