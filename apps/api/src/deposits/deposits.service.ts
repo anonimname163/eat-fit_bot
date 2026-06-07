@@ -13,7 +13,7 @@ import { CreateDepositDto } from './dto/create-deposit.dto';
 import { DepositResponseDto } from './dto/deposit-response.dto';
 
 export interface AdminDepositResult {
-  deposit: DepositResponseDto;
+  deposit: DepositResponseDto | null; // null — повторная (идемпотентная) команда без новой записи
   balance: string;
 }
 
@@ -37,14 +37,18 @@ export class DepositsService {
     }
 
     const amount = Money.fromMajor(dto.amount);
-    const key = dto.idempotencyKey ?? randomUUID();
+    // Ключ в пространстве «deposit:» — не пересекается с ключами списаний/заказов.
+    const key = `deposit:${dto.idempotencyKey ?? randomUUID()}`;
 
     // Сначала проводка по балансу (идемпотентна по ключу). Запись Deposit и уведомления —
     // только если операция реально применена, иначе повтор создал бы дубль истории/спама.
     const { client: updated, applied } = await this.balance.deposit(target.id, amount, key);
     if (!applied) {
       const [last] = await this.deposits.findByClient(target.id);
-      return { deposit: new DepositResponseDto(last), balance: updated.balance.toString() };
+      return {
+        deposit: last ? new DepositResponseDto(last) : null,
+        balance: updated.balance.toString(),
+      };
     }
 
     const deposit = await this.deposits.create({
@@ -66,7 +70,8 @@ export class DepositsService {
     }
 
     const amount = Money.fromMajor(dto.amount);
-    const key = dto.idempotencyKey ?? randomUUID();
+    // Ключ в пространстве «debit:» — не пересекается с ключами пополнений/заказов.
+    const key = `debit:${dto.idempotencyKey ?? randomUUID()}`;
 
     const { client: updated, applied } = await this.balance.adminDebit(target.id, amount, key);
     if (applied) {
