@@ -1,21 +1,48 @@
+# зависимости
 node_modules/
-_bmad
-_bmad-output
-.env
-.env.bak
-.env*.local
-*.log
-npm-debug.log*
-.DS_Store
-.claude/
 
-# Личный handoff-файл прогресса (содержит dev-секреты)
-REFACTOR-PROGRESS.md
-
-# Сборка монорепо
+# сборка монорепо
 dist/
 **/dist/
-*.tsbuildinfo
 .next/
 out/
 **/out/
+*.tsbuildinfo
+
+# секреты / окружение
+.env
+.env.bak
+.env*.local
+
+# логи
+*.log
+npm-debug.log*
+
+# IDE / редакторы
+.idea/
+.vscode/
+*.iml
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.claude/
+
+# ОС
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# временные / личное
+*.tmp
+REFACTOR-PROGRESS.md
+
+# BMad: артефакты не трекаем, КРОМЕ чек-листа приёмки
+_bmad/
+_bmad-output/*
+!_bmad-output/implementation-artifacts/
+_bmad-output/implementation-artifacts/*
+!_bmad-output/implementation-artifacts/refactor-parity-checklist.md
+!_bmad-output/implementation-artifacts/refactor-parity-checklist.html
+!_bmad-output/implementation-artifacts/checklist-markers.mjs
+!_bmad-output/implementation-artifacts/build-checklist-html.mjs
