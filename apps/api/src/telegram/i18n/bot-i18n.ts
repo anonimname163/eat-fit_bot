@@ -81,6 +81,16 @@ const dict = {
   pf_phone: { ru: '📞 Телефон', uz: '📞 Telefon' },
   pf_address: { ru: '📍 Адрес', uz: '📍 Manzil' },
   pf_language: { ru: '🌐 Язык', uz: '🌐 Til' },
+  pf_password: { ru: '🔐 Пароль для сайта', uz: '🔐 Sayt uchun parol' },
+  ask_password: {
+    ru: 'Введите новый пароль (минимум 6 символов) — для входа на сайте по телефону:',
+    uz: 'Yangi parol kiriting (kamida 6 ta belgi) — saytga telefon orqali kirish uchun:',
+  },
+  password_too_short: { ru: 'Пароль слишком короткий (минимум 6 символов).', uz: 'Parol juda qisqa (kamida 6 ta belgi).' },
+  password_saved: {
+    ru: 'Пароль сохранён ✅ Теперь можно войти на сайте по телефону и паролю.',
+    uz: 'Parol saqlandi ✅ Endi saytga telefon va parol bilan kirishingiz mumkin.',
+  },
   profile_ask_name: { ru: 'Введите имя и фамилию:', uz: 'Ism va familiyani kiriting:' },
   profile_ask_address: { ru: 'Введите новый адрес доставки:', uz: 'Yangi yetkazib berish manzilini kiriting:' },
   profile_saved: { ru: 'Профиль обновлён ✅', uz: 'Profil yangilandi ✅' },

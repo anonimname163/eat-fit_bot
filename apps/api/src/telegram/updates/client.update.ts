@@ -12,6 +12,7 @@ import { OrdersService } from '../../orders/orders.service';
 import { CartResponseDto } from '../../orders/cart/dto/cart-response.dto';
 import { DepositsService } from '../../deposits/deposits.service';
 import { SettingsService, SettingKey } from '../../settings/settings.service';
+import { hashPassword } from '../../auth/password';
 import { DomainError, InsufficientBalanceError } from '../../common/errors/domain-error';
 import { BotStateService } from '../bot-state.service';
 import { BotUiService } from '../bot-ui.service';
@@ -273,11 +274,12 @@ export class ClientUpdate {
         [Markup.button.callback(t(lang, 'pf_phone'), 'pedit:phone')],
         [Markup.button.callback(t(lang, 'pf_address'), 'pedit:address')],
         [Markup.button.callback(t(lang, 'pf_language'), 'pedit:lang')],
+        [Markup.button.callback(t(lang, 'pf_password'), 'pedit:password')],
       ]),
     );
   }
 
-  @Action(/^pedit:(name|phone|address|lang)$/)
+  @Action(/^pedit:(name|phone|address|lang|password)$/)
   async onProfileEditField(@Ctx() ctx: Context): Promise<void> {
     await ctx.answerCbQuery();
     const from = ctx.from;
@@ -294,6 +296,7 @@ export class ClientUpdate {
     this.state.setSession(from.id, 'profile_edit', field);
     if (field === 'name') await ctx.reply(t(lang, 'profile_ask_name'));
     else if (field === 'phone') await ctx.reply(t(lang, 'ask_phone'), shareContactKeyboard(lang));
+    else if (field === 'password') await ctx.reply(t(lang, 'ask_password'));
     else await ctx.reply(t(lang, 'profile_ask_address'));
   }
 
@@ -455,6 +458,17 @@ export class ClientUpdate {
         return;
       }
       await this.applyPhone(ctx, 'profile_edit', phone);
+      return;
+    }
+    if (step === 'password') {
+      if (text.trim().length < 6) {
+        await ctx.reply(t(lang, 'password_too_short'));
+        return;
+      }
+      client.passwordHash = hashPassword(text.trim());
+      await this.clients.save(client);
+      this.state.clearSession(from.id);
+      await ctx.reply(t(lang, 'password_saved'));
       return;
     }
     if (step === 'name') client.name = text.replace(/\s+/g, ' ');
