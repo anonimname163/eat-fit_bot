@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { ENTITIES } from './entities';
 
 /**
  * Определить настройку SSL для pg (перенос логики из старого src/db.js):
@@ -25,12 +27,15 @@ function resolveSsl(url?: string, setting?: string): false | { rejectUnauthorize
         type: 'postgres' as const,
         url: config.get<string>('database.url'),
         ssl: resolveSsl(config.get<string>('database.url'), config.get<string>('database.ssl')),
-        autoLoadEntities: true,
+        entities: ENTITIES,
+        namingStrategy: new SnakeNamingStrategy(),
         synchronize: config.get<boolean>('database.synchronize') ?? true,
         retryAttempts: 2,
         retryDelay: 1500,
       }),
     }),
+    TypeOrmModule.forFeature(ENTITIES),
   ],
+  exports: [TypeOrmModule],
 })
 export class DatabaseModule {}

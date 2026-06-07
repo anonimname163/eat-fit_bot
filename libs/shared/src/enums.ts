@@ -26,3 +26,16 @@ export enum Language {
   Ru = 'ru',
   Uz = 'uz',
 }
+
+// Способ оплаты заказа: с баланса клиента или при получении.
+export enum PaymentMethod {
+  Balance = 'balance',
+  OnDelivery = 'on_delivery',
+}
+
+// Тип движения по балансу (append-only ledger).
+export enum BalanceTransactionType {
+  Deposit = 'deposit', // пополнение админом (+)
+  OrderCharge = 'order_charge', // списание за заказ (−)
+  OrderRefund = 'order_refund', // возврат при отмене (+)
+}
