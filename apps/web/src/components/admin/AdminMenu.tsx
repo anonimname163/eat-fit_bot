@@ -10,6 +10,7 @@ import {
   useDeleteDish,
   useUploadDishPhoto,
   useDeleteDishPhoto,
+  usePublicConfig,
   type DishBody,
 } from '@/lib/admin-queries';
 import { useT, type I18nKey } from '@/lib/i18n';
@@ -43,6 +44,27 @@ export function AdminMenu() {
   const del = useDeleteDish();
   const uploadPhoto = useUploadDishPhoto();
   const deletePhoto = useDeleteDishPhoto();
+  const { data: config } = usePublicConfig();
+
+  // Какому блюду показываем предпросмотр поста (id) — null если скрыт.
+  const [postFor, setPostFor] = useState<string | null>(null);
+
+  const deepLink = (id: string): string | null =>
+    config?.botUsername ? `https://t.me/${config.botUsername}?start=item_${id}` : null;
+
+  const copyLink = async (id: string) => {
+    const link = deepLink(id);
+    if (!link) {
+      window.alert(t('adm_no_bot_username'));
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      window.alert(t('adm_link_copied'));
+    } catch {
+      window.prompt(t('adm_copy_link'), link); // фолбэк: показать для ручного копирования
+    }
+  };
 
   // undefined — список; null — новое; объект — редактирование.
   const [editing, setEditing] = useState<MenuItemDto | null | undefined>(undefined);
@@ -226,6 +248,50 @@ export function AdminMenu() {
               {t('adm_delete')}
             </button>
           </div>
+          <div className="seg" style={{ marginTop: 6 }}>
+            <button className="btn" onClick={() => copyLink(it.id)}>
+              {t('adm_copy_link')}
+            </button>
+            <button
+              className="btn"
+              onClick={() => setPostFor((cur) => (cur === it.id ? null : it.id))}
+            >
+              {t('adm_post_preview')}
+            </button>
+          </div>
+
+          {postFor === it.id && (
+            <div className="card" style={{ marginTop: 8, borderStyle: 'dashed' }}>
+              {it.hasPhoto && (
+                <img
+                  className="dish-photo"
+                  src={`/api/menu/${it.id}/photo`}
+                  alt=""
+                  style={{ borderRadius: 8, marginBottom: 8, maxHeight: 180, objectFit: 'cover' }}
+                />
+              )}
+              <div className="dish-name">🍽 {it.nameRu}</div>
+              {it.descriptionRu && <div className="dish-desc">{it.descriptionRu}</div>}
+              <div className="dish-desc">
+                💵 {formatMoney(it.price)} {t('currency')}
+              </div>
+              {deepLink(it.id) ? (
+                <a
+                  className="btn btn-primary btn-block"
+                  href={deepLink(it.id) as string}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ marginTop: 8, display: 'block', textAlign: 'center' }}
+                >
+                  {t('adm_order_btn')}
+                </a>
+              ) : (
+                <div className="muted" style={{ marginTop: 8 }}>
+                  {t('adm_no_bot_username')}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>

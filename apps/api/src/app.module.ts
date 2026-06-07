@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { SettingsModule } from './settings/settings.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { HealthModule } from './health/health.module';
+import { PublicConfigModule } from './public-config/public-config.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { HealthModule } from './health/health.module';
     SettingsModule,
     TelegramModule,
     HealthModule,
+    PublicConfigModule,
   ],
 })
 export class AppModule {}

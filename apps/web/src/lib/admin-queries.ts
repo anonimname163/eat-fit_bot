@@ -27,6 +27,15 @@ export function useTransition() {
   });
 }
 
+/* ── публичный конфиг (юзернейм бота для deep-link) ── */
+export function usePublicConfig() {
+  return useQuery({
+    queryKey: ['config'],
+    queryFn: () => api<{ botUsername: string | null }>('/config'),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /* ── меню ── */
 export function useAdminMenu() {
   return useQuery({ queryKey: ['admin', 'menu'], queryFn: () => api<MenuItemDto[]>('/admin/menu') });
