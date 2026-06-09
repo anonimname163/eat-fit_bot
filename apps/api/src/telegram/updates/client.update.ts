@@ -26,7 +26,7 @@ import {
   formatMoney,
   statusText,
 } from '../i18n/bot-i18n';
-import { languageKeyboard, shareContactKeyboard, stepperRow } from '../telegram-keyboards';
+import { languageKeyboard, shareContactKeyboard } from '../telegram-keyboards';
 
 /**
  * Клиентские флоу бота (FR-B1/B2, FR-C, FR-M2, FR-O1/O8): /start + deep link, регистрация
@@ -66,6 +66,9 @@ export class ClientUpdate {
     const payload = text.split(' ').slice(1).join(' ').trim();
     const m = payload.match(/^item_(.+)$/);
     const deepItemId = m ? m[1] : null;
+    // «Подробнее» из поста в канал: /start detail_<id> → откроем деталь блюда (web_app в личке).
+    const md = payload.match(/^detail_(.+)$/);
+    const deepDetailId = md ? md[1] : null;
 
     // Заготовка клиента для нового пользователя (роль client; админ-промоут — при auth).
     let client = await this.clients.findByTelegramId(telegramId);
@@ -81,15 +84,16 @@ export class ClientUpdate {
       client = await this.clients.save(client);
     }
 
-    // Регистрация не завершена — запускаем диалог (deepItemId откроем после).
+    // Регистрация не завершена — запускаем диалог (deep-link откроем после).
     if (!this.isRegistered(client)) {
-      this.state.setSession(telegramId, 'register', 'language', { deepItemId });
+      this.state.setSession(telegramId, 'register', 'language', { deepItemId, deepDetailId });
       await ctx.reply(t(this.ui.langOf(client), 'choose_language'), languageKeyboard());
       return;
     }
 
     await this.ui.showMainMenu(ctx, client);
     if (deepItemId) await this.openDish(ctx, client, deepItemId);
+    else if (deepDetailId) await this.openDishDetail(ctx, client, deepDetailId);
   }
 
   // ───────────────────────────── выбор языка ─────────────────────────────
@@ -149,14 +153,16 @@ export class ClientUpdate {
     if (!client) return void (await ctx.answerCbQuery());
     const lang = this.ui.langOf(client);
     try {
-      const current = (await this.cart.getCart()).items.find((i) => i.menuItemId === itemId);
+      const current = (await this.cart.getCart()).items.find(
+        (i) => i.menuItemId === itemId && i.portion === 1,
+      );
       const qty = current?.quantity ?? 0;
       const next = dir === 'inc' ? qty + 1 : Math.max(0, qty - 1);
       await ctx.answerCbQuery();
       if (next === qty) return; // ➖ на нуле — без изменений
       await this.cart.setQuantity(itemId, next);
-      // обновляем степпер этой карточки на месте (без новых сообщений)
-      await ctx.editMessageReplyMarkup({ inline_keyboard: [stepperRow(lang, itemId, next)] });
+      // Обновляем клавиатуру карточки на месте: степпер + «Подробнее» (кнопка не пропадает).
+      await ctx.editMessageReplyMarkup(this.ui.dishCardKeyboard(lang, itemId, next));
     } catch (err) {
       await ctx.answerCbQuery(this.errText(err, lang));
     }
@@ -419,10 +425,12 @@ export class ClientUpdate {
         client.address = text;
         await this.clients.save(client);
         const deepItemId = session.data.deepItemId as string | null | undefined;
+        const deepDetailId = session.data.deepDetailId as string | null | undefined;
         this.state.clearSession(from.id);
         await ctx.reply(t(lang, 'registration_done'), { reply_markup: { remove_keyboard: true } });
         await this.ui.showMainMenu(ctx, client);
         if (deepItemId) await this.openDish(ctx, client, deepItemId);
+        else if (deepDetailId) await this.openDishDetail(ctx, client, deepDetailId);
         return;
       }
     }
@@ -654,6 +662,17 @@ export class ClientUpdate {
       return;
     }
     await this.ui.renderMenu(ctx, client);
+  }
+
+  /** «Подробнее» из поста в канал (/start detail_<id>): открыть деталь блюда в Mini App. */
+  private async openDishDetail(ctx: Context, client: Client, itemId: string): Promise<void> {
+    const lang = this.ui.langOf(client);
+    const item = await this.menu.findById(itemId);
+    if (!item || !item.isActive) {
+      await ctx.reply(t(lang, 'dish_not_found'));
+      return;
+    }
+    await this.ui.sendDetailLink(ctx, client, item);
   }
 
   /** Редактировать текущее сообщение (по callback) или отправить новое — для edit-in-place. */

@@ -116,10 +116,9 @@ export class BotUiService {
     const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
     const text = `🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`;
 
-    // Под степпером — кнопка «Подробнее» (web_app в Mini App), если задан https web app url.
-    const detailRow = detailButtonRow(lang, item.id, this.webAppUrl);
-    const rows = detailRow ? [stepperRow(lang, item.id, qty), detailRow] : [stepperRow(lang, item.id, qty)];
-    const markup = { reply_markup: { inline_keyboard: rows } };
+    // Степпер + кнопка «Подробнее» (web_app в Mini App) — единый билдер, чтобы при правке
+    // счётчика (editMessageReplyMarkup) кнопка «Подробнее» не пропадала.
+    const markup = { reply_markup: this.dishCardKeyboard(lang, item.id, qty) };
     const photo = await this.photoInput(item);
     if (photo) {
       try {
@@ -132,6 +131,38 @@ export class BotUiService {
     }
     const msg = await ctx.reply(text, { parse_mode: 'HTML', ...markup });
     return msg.message_id;
+  }
+
+  /**
+   * Клавиатура карточки блюда: ряд-степпер + (если есть https web app) ряд «Подробнее».
+   * Единый источник — используется и при отправке карточки, и при правке счётчика
+   * (editMessageReplyMarkup), чтобы «Подробнее» не пропадала при ➖/➕.
+   */
+  dishCardKeyboard(lang: Lang, itemId: string, qty: number) {
+    const detailRow = detailButtonRow(lang, itemId, this.webAppUrl);
+    const rows = detailRow
+      ? [stepperRow(lang, itemId, qty), detailRow]
+      : [stepperRow(lang, itemId, qty)];
+    return { inline_keyboard: rows };
+  }
+
+  /**
+   * Deep-link «Подробнее» из канала (/start detail_<id>): сообщение с web_app-кнопкой,
+   * открывающей деталь блюда в Mini App. Без https web app url — фолбэк на карточку блюда.
+   */
+  async sendDetailLink(ctx: Context, client: Client, item: MenuItem): Promise<void> {
+    const lang = this.langOf(client);
+    const row = detailButtonRow(lang, item.id, this.webAppUrl);
+    if (!row) {
+      await this.sendDishCard(ctx, lang, item, 0);
+      return;
+    }
+    const name = pick(lang, item.nameRu, item.nameUz);
+    const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
+    await ctx.reply(`🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`, {
+      parse_mode: 'HTML',
+      reply_markup: { inline_keyboard: [row] },
+    });
   }
 
   /** Удалить сообщения витрины (карточки + промпт) — при оформлении меню «исчезает». */

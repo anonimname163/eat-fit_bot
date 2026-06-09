@@ -22,15 +22,15 @@ export function channelPostText(item: MenuItem): string {
 }
 
 /**
- * Inline-кнопки под постом в канал (если задан BOT_USERNAME): «Заказать» (deep link, запуск +
- * добавление в корзину) и «Подробнее» (startapp — открывает Mini App на детали блюда).
- * В КАНАЛЕ web_app-кнопки запрещены, поэтому «Подробнее» — URL-кнопка через ?startapp= (для
- * этого у бота должно быть настроено Mini App в BotFather; детали читаются из start_param).
+ * Inline-кнопки под постом в канал (если задан BOT_USERNAME): «Заказать» (deep link — запуск +
+ * добавление в корзину) и «Подробнее» (deep link на /start detail_<id> — бот открывает деталь
+ * блюда через web_app-кнопку в личке). В КАНАЛЕ ?startapp= требует настроенного Mini App в
+ * BotFather и иначе даёт «bot invalid», поэтому используем обычный ?start= (всегда работает).
  */
 export function orderDeepLinkButton(item: MenuItem, lang: Lang, botUsername?: string) {
   if (!botUsername) return {};
   const orderUrl = `https://t.me/${botUsername}?start=item_${item.id}`;
-  const detailUrl = `https://t.me/${botUsername}?startapp=dish_${item.id}`;
+  const detailUrl = `https://t.me/${botUsername}?start=detail_${item.id}`;
   return Markup.inlineKeyboard([
     [Markup.button.url(t(lang, 'post_order_btn'), orderUrl)],
     [Markup.button.url(t(lang, 'btn_details'), detailUrl)],
