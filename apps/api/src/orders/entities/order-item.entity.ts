@@ -28,4 +28,12 @@ export class OrderItem extends BaseEntity {
   // Снимок цены на момент заказа (цены берутся из БД, не от клиента).
   @Column({ type: 'numeric', precision: 12, scale: 2, transformer: moneyTransformer })
   priceAtOrder!: Money;
+
+  // Какая порция выбрана (1 — обычная, 2 — вторая порция со своей ценой).
+  @Column({ type: 'int', default: 1 })
+  portion!: number;
+
+  // Снимок веса выбранной порции (для отображения; кухня видит размер порции).
+  @Column({ type: 'int', nullable: true })
+  portionWeightGrams!: number | null;
 }

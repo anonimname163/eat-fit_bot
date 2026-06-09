@@ -9,6 +9,9 @@ export interface OrderItemView {
   quantity: number;
   priceAtOrder: string;
   lineTotal: string;
+  // Порция и её вес (для отображения размера порции).
+  portion: number;
+  weightGrams: number | null;
 }
 
 export class OrderResponseDto {
@@ -46,6 +49,8 @@ export class OrderResponseDto {
       quantity: it.quantity,
       priceAtOrder: it.priceAtOrder.toString(),
       lineTotal: it.priceAtOrder.multiply(it.quantity).toString(),
+      portion: it.portion ?? 1,
+      weightGrams: it.portionWeightGrams ?? null,
     }));
   }
 }

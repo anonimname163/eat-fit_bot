@@ -354,6 +354,18 @@ button {
 .dd-body {
   padding: 16px;
 }
+.dd-portions {
+  margin-bottom: 14px;
+}
+.dd-portions-title {
+  font-size: 13px;
+  color: var(--hint);
+  margin-bottom: 6px;
+}
+.dd-portions .seg button {
+  font-size: 13px;
+  line-height: 1.2;
+}
 .dd-price-row {
   display: flex;
   align-items: center;

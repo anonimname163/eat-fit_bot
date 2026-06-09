@@ -1,6 +1,6 @@
 import { Markup } from 'telegraf';
 import { InlineKeyboardButton } from 'telegraf/typings/core/types/typegram';
-import { OrderStatus, Role } from '@eatfit/shared';
+import { Language, OrderStatus, Role } from '@eatfit/shared';
 import { OrderResponseDto } from '../orders/dto/order-response.dto';
 import { allowedTargets } from '../orders/order-status.machine';
 import { Lang, t, esc, pick, formatMoney, statusText } from './i18n/bot-i18n';
@@ -18,7 +18,8 @@ export function orderCardText(lang: Lang, order: OrderResponseDto): string {
     `<b>${esc(t(lang, 'order_label'))} #${esc(order.number)}</b> — ${esc(statusText(lang, order.status))}`,
   ];
   for (const it of order.items) {
-    lines.push(`• ${esc(pick(lang, it.nameRu, it.nameUz))} ×${it.quantity}`);
+    const w = it.weightGrams ? ` (${it.weightGrams} ${lang === Language.Uz ? 'g' : 'г'})` : '';
+    lines.push(`• ${esc(pick(lang, it.nameRu, it.nameUz))}${esc(w)} ×${it.quantity}`);
   }
   lines.push(`${esc(t(lang, 'group_address'))}: ${esc(order.address)}`);
   if (order.customerPhone) {

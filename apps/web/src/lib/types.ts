@@ -36,6 +36,8 @@ export interface MenuItemDto {
   isActive: boolean;
   days: number[];
   weightGrams: number | null;
+  price2: string | null;
+  weightGrams2: number | null;
   orderDeadline: string | null;
   ingredients: Ingredient[] | null;
   allergens: Allergens | null;
@@ -51,6 +53,8 @@ export interface CartItemDto {
   price: string;
   quantity: number;
   lineTotal: string;
+  portion: number;
+  weightGrams: number | null;
 }
 
 export interface CartDto {
@@ -65,6 +69,8 @@ export interface OrderItemDto {
   quantity: number;
   priceAtOrder: string;
   lineTotal: string;
+  portion: number;
+  weightGrams: number | null;
 }
 
 export interface OrderDto {

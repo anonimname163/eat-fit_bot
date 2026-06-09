@@ -14,6 +14,8 @@ export interface DishBody {
   isActive?: boolean;
   days?: number[];
   weightGrams?: number | null;
+  price2?: number | null;
+  weightGrams2?: number | null;
   orderDeadline?: string | null;
   ingredients?: Ingredient[] | null;
   allergens?: Allergens | null;

@@ -65,11 +65,19 @@ export class OrdersService {
       if (!item || !item.isActive) {
         throw new ConflictError('Одно из блюд недоступно — обновите корзину');
       }
-      total = total.add(item.price.multiply(line.quantity));
+      // Цена и вес — по выбранной порции (2 — вторая порция со своей ценой).
+      const price = line.portion === 2 ? item.price2 : item.price;
+      if (price === null) {
+        throw new ConflictError('Одно из блюд недоступно — обновите корзину');
+      }
+      const weight = line.portion === 2 ? item.weightGrams2 : item.weightGrams;
+      total = total.add(price.multiply(line.quantity));
       itemsData.push({
         menuItemId: item.id,
         quantity: line.quantity,
-        priceAtOrder: item.price,
+        priceAtOrder: price,
+        portion: line.portion,
+        portionWeightGrams: weight,
       });
     }
 

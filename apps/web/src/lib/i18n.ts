@@ -149,9 +149,13 @@ const dict = {
   nut_carbs: { ru: 'Углеводы', uz: 'Uglevodlar' },
   unit_gram: { ru: 'г', uz: 'g' },
   unit_kcal: { ru: 'ккал', uz: 'kkal' },
+  portion: { ru: 'Порция', uz: 'Porsiya' },
+  portion_choose: { ru: 'Выберите порцию', uz: 'Porsiyani tanlang' },
 
   // ── админ: подробные поля блюда ──
   adm_weight: { ru: 'Вес, г', uz: 'Og‘irligi, g' },
+  adm_price2: { ru: 'Цена 2-й порции (пусто = нет)', uz: '2-porsiya narxi (bo‘sh = yo‘q)' },
+  adm_weight2: { ru: 'Вес 2-й порции, г', uz: '2-porsiya og‘irligi, g' },
   adm_deadline: { ru: 'Заказ до (ЧЧ:ММ)', uz: 'Buyurtma ...gacha (SS:DD)' },
   adm_ingredients: { ru: 'Состав (ингредиент + граммы)', uz: 'Tarkibi (ingredient + gramm)' },
   adm_ing_name_ru: { ru: 'Ингредиент (RU)', uz: 'Ingredient (RU)' },

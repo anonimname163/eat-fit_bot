@@ -3,6 +3,9 @@ import { Injectable } from '@nestjs/common';
 export interface CartLine {
   menuItemId: string;
   quantity: number;
+  // Выбранная порция: 1 — обычная, 2 — вторая порция со своей ценой. Идентичность строки
+  // корзины = (menuItemId, portion): одно блюдо может быть в корзине в двух порциях.
+  portion: number;
 }
 
 /** Абстракция хранилища корзины (под будущий Redis). */

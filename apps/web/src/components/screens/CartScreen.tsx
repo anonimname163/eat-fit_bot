@@ -47,10 +47,18 @@ export function CartScreen() {
     <div>
       <h2>{t('nav_cart')}</h2>
       {cart.items.map((it) => (
-        <div className="card" key={it.menuItemId}>
+        <div className="card" key={`${it.menuItemId}:${it.portion}`}>
           <div className="row">
             <div>
-              <div className="dish-name">{pick(lang, it.nameRu, it.nameUz)}</div>
+              <div className="dish-name">
+                {pick(lang, it.nameRu, it.nameUz)}
+                {it.weightGrams != null && (
+                  <span className="muted">
+                    {' '}
+                    · {it.weightGrams} {t('unit_gram')}
+                  </span>
+                )}
+              </div>
               <div className="dish-desc">
                 {formatMoney(it.lineTotal)} {t('currency')}
               </div>
@@ -59,7 +67,9 @@ export function CartScreen() {
               qty={it.quantity}
               addLabel={t('add')}
               busy={setQty.isPending}
-              onChange={(q) => setQty.mutate({ menuItemId: it.menuItemId, quantity: q })}
+              onChange={(q) =>
+                setQty.mutate({ menuItemId: it.menuItemId, quantity: q, portion: it.portion })
+              }
             />
           </div>
         </div>

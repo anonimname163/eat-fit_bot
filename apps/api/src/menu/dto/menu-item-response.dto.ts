@@ -18,6 +18,8 @@ export class MenuItemResponseDto {
   days: number[];
   // Подробные поля (для детальной карточки).
   weightGrams: number | null;
+  price2: string | null;
+  weightGrams2: number | null;
   orderDeadline: string | null;
   ingredients: Ingredient[] | null;
   allergens: Allergens | null;
@@ -36,6 +38,8 @@ export class MenuItemResponseDto {
     this.isActive = item.isActive;
     this.days = item.days ?? [];
     this.weightGrams = item.weightGrams ?? null;
+    this.price2 = item.price2 ? item.price2.toString() : null;
+    this.weightGrams2 = item.weightGrams2 ?? null;
     this.orderDeadline = item.orderDeadline ?? null;
     this.ingredients = item.ingredients ?? null;
     this.allergens = item.allergens ?? null;

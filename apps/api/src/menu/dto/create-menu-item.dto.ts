@@ -70,6 +70,17 @@ export class CreateMenuItemDto {
   @Min(0)
   weightGrams?: number | null;
 
+  // Вторая порция: цена и вес (включена, когда задана price2).
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  price2?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weightGrams2?: number | null;
+
   // Дедлайн заказа "H:MM"/"HH:MM" (24ч; час можно однозначный — 9:00). Пустая строка → сбросить.
   // Нормализация в "HH:MM" — в сервисе.
   @IsOptional()

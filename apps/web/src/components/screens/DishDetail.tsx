@@ -38,14 +38,17 @@ export function DishDetail() {
   const add = useAddToCart();
   const setQty = useSetQuantity();
   const busy = add.isPending || setQty.isPending;
+  // Выбранная порция (1 — обычная, 2 — вторая со своей ценой).
+  const [portion, setPortion] = useState(1);
 
   if (!id) return null;
 
-  const qty = cart?.items.find((i) => i.menuItemId === id)?.quantity ?? 0;
+  const qty =
+    cart?.items.find((i) => i.menuItemId === id && i.portion === portion)?.quantity ?? 0;
   const change = (q: number) => {
-    if (q <= 0) setQty.mutate({ menuItemId: id, quantity: 0 });
-    else if (qty === 0) add.mutate(id);
-    else setQty.mutate({ menuItemId: id, quantity: q });
+    if (q <= 0) setQty.mutate({ menuItemId: id, quantity: 0, portion });
+    else if (qty === 0) add.mutate({ menuItemId: id, portion });
+    else setQty.mutate({ menuItemId: id, quantity: q, portion });
   };
 
   const header = (
@@ -77,6 +80,13 @@ export function DishDetail() {
   const hasNutrition =
     nut && (nut.calories != null || nut.protein != null || nut.fat != null || nut.carbs != null);
 
+  // Вторая порция доступна, когда задана price2. Цена/вес — по выбранной порции.
+  const has2 = item.price2 != null;
+  const curPrice = portion === 2 && item.price2 != null ? item.price2 : item.price;
+  const curWeight = portion === 2 ? item.weightGrams2 : item.weightGrams;
+  const portionLabel = (p: number, w: number | null, price: string) =>
+    `${w != null ? `${w} ${t('unit_gram')}` : `${t('portion')} ${p}`} · ${formatMoney(price)} ${t('currency')}`;
+
   return (
     <div className="dd">
       {header}
@@ -97,14 +107,34 @@ export function DishDetail() {
       </div>
 
       <div className="dd-body">
+        {has2 && (
+          <div className="dd-portions">
+            <div className="dd-portions-title">{t('portion_choose')}</div>
+            <div className="seg">
+              <button
+                className={portion === 1 ? 'active' : ''}
+                onClick={() => setPortion(1)}
+              >
+                {portionLabel(1, item.weightGrams, item.price)}
+              </button>
+              <button
+                className={portion === 2 ? 'active' : ''}
+                onClick={() => setPortion(2)}
+              >
+                {portionLabel(2, item.weightGrams2, item.price2 as string)}
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="dd-price-row">
           <div>
             <div className="dd-price">
-              {formatMoney(item.price)} {t('currency')}
+              {formatMoney(curPrice)} {t('currency')}
             </div>
-            {item.weightGrams != null && (
+            {curWeight != null && (
               <div className="dd-weight">
-                {item.weightGrams} {t('unit_gram')}
+                {curWeight} {t('unit_gram')}
               </div>
             )}
           </div>

@@ -8,6 +8,9 @@ export interface CartItemView {
   price: string;
   quantity: number;
   lineTotal: string;
+  // Выбранная порция и её вес (для отображения и идентичности строки).
+  portion: number;
+  weightGrams: number | null;
 }
 
 export class CartResponseDto {

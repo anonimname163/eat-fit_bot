@@ -37,7 +37,9 @@ export function MenuScreen() {
       )
     : menu;
 
-  const qtyOf = (id: string) => cart?.items.find((i) => i.menuItemId === id)?.quantity ?? 0;
+  // В списке работаем с обычной порцией (1); вторую порцию выбирают в детальной карточке.
+  const qtyOf = (id: string) =>
+    cart?.items.find((i) => i.menuItemId === id && i.portion === 1)?.quantity ?? 0;
 
   const change = (item: MenuItemDto, q: number) => {
     if (q <= 0) setQty.mutate({ menuItemId: item.id, quantity: 0 });

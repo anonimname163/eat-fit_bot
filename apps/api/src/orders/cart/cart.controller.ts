@@ -15,7 +15,7 @@ export class CartController {
 
   @Post('items')
   add(@Body() dto: AddCartItemDto) {
-    return this.cart.addItem(dto.menuItemId, dto.quantity);
+    return this.cart.addItem(dto.menuItemId, dto.quantity, dto.portion ?? 1);
   }
 
   @Patch('items/:menuItemId')
@@ -23,7 +23,7 @@ export class CartController {
     @Param('menuItemId', ParseUUIDPipe) menuItemId: string,
     @Body() dto: SetQuantityDto,
   ) {
-    return this.cart.setQuantity(menuItemId, dto.quantity);
+    return this.cart.setQuantity(menuItemId, dto.quantity, dto.portion ?? 1);
   }
 
   @Delete()

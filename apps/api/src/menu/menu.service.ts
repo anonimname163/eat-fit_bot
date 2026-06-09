@@ -57,6 +57,8 @@ export class MenuService {
       isActive: dto.isActive ?? true,
       days: dto.days ?? [],
       weightGrams: dto.weightGrams ?? null,
+      price2: dto.price2 != null ? Money.fromMajor(dto.price2) : null,
+      weightGrams2: dto.weightGrams2 ?? null,
       orderDeadline: normalizeDeadline(dto.orderDeadline),
       ingredients: normalizeIngredients(dto.ingredients),
       allergens: normalizeAllergens(dto.allergens),
@@ -78,6 +80,8 @@ export class MenuService {
     if (dto.isActive !== undefined) item.isActive = dto.isActive;
     if (dto.days !== undefined) item.days = dto.days;
     if (dto.weightGrams !== undefined) item.weightGrams = dto.weightGrams ?? null;
+    if (dto.price2 !== undefined) item.price2 = dto.price2 != null ? Money.fromMajor(dto.price2) : null;
+    if (dto.weightGrams2 !== undefined) item.weightGrams2 = dto.weightGrams2 ?? null;
     if (dto.orderDeadline !== undefined) item.orderDeadline = normalizeDeadline(dto.orderDeadline);
     if (dto.ingredients !== undefined) item.ingredients = normalizeIngredients(dto.ingredients);
     if (dto.allergens !== undefined) item.allergens = normalizeAllergens(dto.allergens);

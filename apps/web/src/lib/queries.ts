@@ -29,8 +29,13 @@ export function useOrders() {
 export function useAddToCart() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (menuItemId: string) =>
-      api<CartDto>('/cart/items', { method: 'POST', body: { menuItemId, quantity: 1 } }),
+    mutationFn: (v: string | { menuItemId: string; portion?: number }) => {
+      const { menuItemId, portion } = typeof v === 'string' ? { menuItemId: v, portion: 1 } : v;
+      return api<CartDto>('/cart/items', {
+        method: 'POST',
+        body: { menuItemId, quantity: 1, portion: portion ?? 1 },
+      });
+    },
     onSuccess: (data) => qc.setQueryData(['cart'], data),
   });
 }
@@ -38,8 +43,11 @@ export function useAddToCart() {
 export function useSetQuantity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (v: { menuItemId: string; quantity: number }) =>
-      api<CartDto>(`/cart/items/${v.menuItemId}`, { method: 'PATCH', body: { quantity: v.quantity } }),
+    mutationFn: (v: { menuItemId: string; quantity: number; portion?: number }) =>
+      api<CartDto>(`/cart/items/${v.menuItemId}`, {
+        method: 'PATCH',
+        body: { quantity: v.quantity, portion: v.portion ?? 1 },
+      }),
     onSuccess: (data) => qc.setQueryData(['cart'], data),
   });
 }

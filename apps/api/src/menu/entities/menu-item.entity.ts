@@ -46,6 +46,14 @@ export class MenuItem extends BaseEntity {
   @Column({ type: 'int', nullable: true })
   weightGrams!: number | null;
 
+  // Вторая порция (вариант): своя цена и вес. Включена, когда задана price2.
+  // Клиент выбирает порцию в Mini App; в заказ идёт цена выбранной порции.
+  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, transformer: moneyTransformer })
+  price2!: Money | null;
+
+  @Column({ type: 'int', nullable: true })
+  weightGrams2!: number | null;
+
   // Дедлайн заказа в формате "HH:MM" (например "09:00") — до какого времени принимаем заказ.
   @Column({ type: 'varchar', length: 5, nullable: true })
   orderDeadline!: string | null;

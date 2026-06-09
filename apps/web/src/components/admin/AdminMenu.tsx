@@ -45,6 +45,8 @@ function emptyForm(): DishBody {
     photoUrl: '',
     days: [],
     weightGrams: null,
+    price2: null,
+    weightGrams2: null,
     orderDeadline: '',
     ingredients: [],
     allergens: { containsRu: '', containsUz: '', mayContainRu: '', mayContainUz: '' },
@@ -140,6 +142,8 @@ export function AdminMenu() {
       photoUrl: '',
       days: it.days ?? [],
       weightGrams: it.weightGrams ?? null,
+      price2: it.price2 != null ? Number(it.price2) : null,
+      weightGrams2: it.weightGrams2 ?? null,
       orderDeadline: it.orderDeadline ?? '',
       ingredients: it.ingredients ?? [],
       allergens: {
@@ -205,6 +209,8 @@ export function AdminMenu() {
       descriptionUz: form.descriptionUz || undefined,
       days: (form.days ?? []).slice().sort((a, b) => a - b),
       weightGrams: form.weightGrams == null ? null : Math.round(form.weightGrams),
+      price2: form.price2 == null ? null : Number(form.price2),
+      weightGrams2: form.weightGrams2 == null ? null : Math.round(form.weightGrams2),
       orderDeadline: form.orderDeadline || '',
       ingredients,
       allergens: form.allergens,
@@ -304,6 +310,24 @@ export function AdminMenu() {
             inputMode="numeric"
             value={form.weightGrams ?? ''}
             onChange={(e) => setForm({ ...form, weightGrams: numOrNull(e.target.value) })}
+          />
+        </div>
+        <div className="field">
+          <label>{t('adm_price2')}</label>
+          <input
+            className="input"
+            inputMode="numeric"
+            value={form.price2 ?? ''}
+            onChange={(e) => setForm({ ...form, price2: numOrNull(e.target.value) })}
+          />
+        </div>
+        <div className="field">
+          <label>{t('adm_weight2')}</label>
+          <input
+            className="input"
+            inputMode="numeric"
+            value={form.weightGrams2 ?? ''}
+            onChange={(e) => setForm({ ...form, weightGrams2: numOrNull(e.target.value) })}
           />
         </div>
         <div className="field">
