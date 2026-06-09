@@ -111,12 +111,10 @@ export class BotUiService {
 
   /** Карточка блюда: фото (file_id/url/загруженный байт-буфер) или текст + ряд-степпер. Возвращает message_id. */
   async sendDishCard(ctx: Context, lang: Lang, item: MenuItem, qty: number): Promise<number | undefined> {
+    // В боте показываем только название и цену; описание — только в Mini App.
     const name = pick(lang, item.nameRu, item.nameUz);
-    const desc = pick(lang, item.descriptionRu, item.descriptionUz);
     const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
-    let text = `🍽 <b>${esc(name)}</b>\n`;
-    if (desc) text += `${esc(desc)}\n`;
-    text += `💵 ${esc(price)}`;
+    const text = `🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`;
 
     const markup = { reply_markup: { inline_keyboard: [stepperRow(lang, item.id, qty)] } };
     const photo = await this.photoInput(item);

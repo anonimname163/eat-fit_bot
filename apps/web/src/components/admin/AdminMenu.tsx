@@ -407,8 +407,7 @@ export function AdminMenu() {
                 🍽 {it.nameRu}
                 {it.nameUz && it.nameUz !== it.nameRu ? ` / ${it.nameUz}` : ''}
               </div>
-              {it.descriptionRu && <div className="dish-desc">🇷🇺 {it.descriptionRu}</div>}
-              {it.descriptionUz && <div className="dish-desc">🇺🇿 {it.descriptionUz}</div>}
+              {/* Описание в пост/бот не идёт (только название и цена) — показывается лишь в витрине Mini App. */}
               <div className="dish-desc">💵 {formatMoney(it.price)} сум / so‘m</div>
               {deepLink(it.id) ? (
                 <a

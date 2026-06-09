@@ -14,9 +14,8 @@ export function channelPostText(item: MenuItem): string {
   const nameLine =
     nameRu && nameUz && nameRu !== nameUz ? `${nameRu} / ${nameUz}` : nameRu || nameUz || '';
 
+  // В посте/боте — только название и цена (описание показывается лишь в Mini App).
   const lines = [`🍽 <b>${esc(nameLine)}</b>`];
-  if (item.descriptionRu?.trim()) lines.push(`🇷🇺 ${esc(item.descriptionRu.trim())}`);
-  if (item.descriptionUz?.trim()) lines.push(`🇺🇿 ${esc(item.descriptionUz.trim())}`);
   lines.push(`💵 ${esc(formatMoney(item.price.toString()))} сум / so‘m`);
   return lines.join('\n');
 }
