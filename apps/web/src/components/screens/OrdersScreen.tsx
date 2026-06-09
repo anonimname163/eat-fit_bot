@@ -19,7 +19,7 @@ export function OrdersScreen() {
         <div className="card" key={o.id}>
           <div className="row">
             <strong>
-              {t('order')} #{o.id.slice(0, 8)}
+              {t('order')} #{o.number}
             </strong>
             <span className="muted">{st(o.status)}</span>
           </div>

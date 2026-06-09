@@ -71,7 +71,7 @@ export function AdminOrders() {
         return (
           <div className="card" key={o.id}>
             <div className="row">
-              <strong>#{o.id.slice(0, 8)}</strong>
+              <strong>#{o.number}</strong>
               <span className="muted">{st(o.status)}</span>
             </div>
             <div className="dish-desc">{o.items.map((i) => `${i.nameRu} ×${i.quantity}`).join(', ')}</div>

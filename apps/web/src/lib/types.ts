@@ -69,6 +69,7 @@ export interface OrderItemDto {
 
 export interface OrderDto {
   id: string;
+  number: number;
   status: OrderStatus;
   total: string;
   address: string;

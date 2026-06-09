@@ -214,7 +214,7 @@ export class ClientUpdate {
     const method = this.match(ctx, 1) === 'balance' ? PaymentMethod.Balance : PaymentMethod.OnDelivery;
     try {
       const order = await this.orders.create({ paymentMethod: method });
-      await this.editOrReply(ctx, `${t(lang, 'order_created')} #${order.id.slice(0, 8)} ✅`);
+      await this.editOrReply(ctx, `${t(lang, 'order_created')} #${order.number} ✅`);
     } catch (err) {
       if (err instanceof InsufficientBalanceError) {
         await this.editOrReply(ctx, t(lang, 'balance_insufficient'));
@@ -626,7 +626,7 @@ export class ClientUpdate {
       return;
     }
     const blocks = list.map((o) => {
-      const num = o.id.slice(0, 8);
+      const num = o.number;
       const total = `${formatMoney(o.total)} ${t(lang, 'currency')}`;
       return [
         `<b>${esc(t(lang, 'order_label'))} #${esc(num)}</b>`,

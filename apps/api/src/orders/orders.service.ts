@@ -137,7 +137,7 @@ export class OrdersService {
     order.status = to;
     await this.orders.save(order);
 
-    const num = order.id.slice(0, 8);
+    const num = order.orderNumber;
     const client = await this.clients.findById(order.clientId);
     if (client?.telegramId) {
       const label = orderStatusLabel(client.language, to);

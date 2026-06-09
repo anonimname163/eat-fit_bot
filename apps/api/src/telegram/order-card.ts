@@ -14,9 +14,8 @@ import { Lang, t, esc, pick, formatMoney, statusText } from './i18n/bot-i18n';
 
 /** Карточка заказа для персонала: позиции, адрес, сумма, комментарий. */
 export function orderCardText(lang: Lang, order: OrderResponseDto): string {
-  const num = order.id.slice(0, 8);
   const lines = [
-    `<b>${esc(t(lang, 'order_label'))} #${esc(num)}</b> — ${esc(statusText(lang, order.status))}`,
+    `<b>${esc(t(lang, 'order_label'))} #${esc(order.number)}</b> — ${esc(statusText(lang, order.status))}`,
   ];
   for (const it of order.items) {
     lines.push(`• ${esc(pick(lang, it.nameRu, it.nameUz))} ×${it.quantity}`);

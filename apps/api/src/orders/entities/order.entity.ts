@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, Index, Generated } from 'typeorm';
 import { OrderStatus, PaymentMethod } from '@eatfit/shared';
 import { BaseEntity } from '../../common/database/base.entity';
 import { Money } from '../../common/money/money';
@@ -8,6 +8,13 @@ import { Client } from '../../clients/entities/client.entity';
 @Entity('orders')
 @Index(['clientId', 'status'])
 export class Order extends BaseEntity {
+  // Короткий последовательный номер заказа (для человека — удобно писать/диктовать).
+  // id остаётся uuid (анти-IDOR), а в UI/уведомлениях показываем orderNumber.
+  @Index({ unique: true })
+  @Generated('increment')
+  @Column({ type: 'int' })
+  orderNumber!: number;
+
   @ManyToOne(() => Client, { nullable: false })
   @JoinColumn({ name: 'client_id' })
   client!: Client;

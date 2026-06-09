@@ -13,6 +13,7 @@ export interface OrderItemView {
 
 export class OrderResponseDto {
   id: string;
+  number: number; // короткий последовательный номер для UI
   status: OrderStatus;
   total: string;
   address: string;
@@ -29,6 +30,7 @@ export class OrderResponseDto {
     customer?: { name: string | null; phone: string | null },
   ) {
     this.id = order.id;
+    this.number = order.orderNumber;
     this.status = order.status;
     this.total = order.total.toString();
     this.address = order.address;
