@@ -20,6 +20,7 @@ export interface DishBody {
   ingredients?: Ingredient[] | null;
   allergens?: Allergens | null;
   nutrition?: Nutrition | null;
+  nutrition2?: Nutrition | null;
 }
 
 /* ── заказы ── */

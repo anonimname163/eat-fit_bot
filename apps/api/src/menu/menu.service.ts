@@ -63,6 +63,7 @@ export class MenuService {
       ingredients: normalizeIngredients(dto.ingredients),
       allergens: normalizeAllergens(dto.allergens),
       nutrition: normalizeNutrition(dto.nutrition),
+      nutrition2: normalizeNutrition(dto.nutrition2),
     });
     return new MenuItemResponseDto(item);
   }
@@ -86,6 +87,7 @@ export class MenuService {
     if (dto.ingredients !== undefined) item.ingredients = normalizeIngredients(dto.ingredients);
     if (dto.allergens !== undefined) item.allergens = normalizeAllergens(dto.allergens);
     if (dto.nutrition !== undefined) item.nutrition = normalizeNutrition(dto.nutrition);
+    if (dto.nutrition2 !== undefined) item.nutrition2 = normalizeNutrition(dto.nutrition2);
     return new MenuItemResponseDto(await this.repo.save(item));
   }
 

@@ -100,12 +100,13 @@ button {
   gap: 8px;
 }
 .dish-photo {
-  width: 60%;
+  width: 100%; /* на всю ширину карточки/div (в т.ч. на ПК) */
   aspect-ratio: 4 / 3;
   height: auto;
   border-radius: 10px;
   object-fit: cover;
   background: var(--secondary-bg);
+  display: block;
 }
 .dish-body {
   flex: 1;

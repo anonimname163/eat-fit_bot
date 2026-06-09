@@ -103,4 +103,10 @@ export class CreateMenuItemDto {
   @ValidateNested()
   @Type(() => NutritionDto)
   nutrition?: NutritionDto | null;
+
+  // КБЖУ 2-й порции (вес/цена/КБЖУ у порций разные; состав общий).
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NutritionDto)
+  nutrition2?: NutritionDto | null;
 }

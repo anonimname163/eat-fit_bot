@@ -24,6 +24,7 @@ export class MenuItemResponseDto {
   ingredients: Ingredient[] | null;
   allergens: Allergens | null;
   nutrition: Nutrition | null;
+  nutrition2: Nutrition | null;
   createdAt: Date;
 
   constructor(item: MenuItem) {
@@ -44,6 +45,7 @@ export class MenuItemResponseDto {
     this.ingredients = item.ingredients ?? null;
     this.allergens = item.allergens ?? null;
     this.nutrition = item.nutrition ?? null;
+    this.nutrition2 = item.nutrition2 ?? null;
     this.createdAt = item.createdAt;
   }
 }

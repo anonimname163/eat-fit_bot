@@ -76,7 +76,8 @@ export function DishDetail() {
   const desc = pick(lang, item.descriptionRu, item.descriptionUz);
   const contains = pick(lang, item.allergens?.containsRu, item.allergens?.containsUz);
   const mayContain = pick(lang, item.allergens?.mayContainRu, item.allergens?.mayContainUz);
-  const nut = item.nutrition;
+  // КБЖУ — по выбранной порции (у порций разные вес/цена/КБЖУ; состав общий).
+  const nut = portion === 2 ? item.nutrition2 : item.nutrition;
   const hasNutrition =
     nut && (nut.calories != null || nut.protein != null || nut.fat != null || nut.carbs != null);
 

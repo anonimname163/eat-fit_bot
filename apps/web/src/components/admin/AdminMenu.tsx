@@ -51,6 +51,7 @@ function emptyForm(): DishBody {
     ingredients: [],
     allergens: { containsRu: '', containsUz: '', mayContainRu: '', mayContainUz: '' },
     nutrition: { calories: null, protein: null, fat: null, carbs: null },
+    nutrition2: { calories: null, protein: null, fat: null, carbs: null },
   };
 }
 
@@ -158,6 +159,12 @@ export function AdminMenu() {
         fat: it.nutrition?.fat ?? null,
         carbs: it.nutrition?.carbs ?? null,
       },
+      nutrition2: {
+        calories: it.nutrition2?.calories ?? null,
+        protein: it.nutrition2?.protein ?? null,
+        fat: it.nutrition2?.fat ?? null,
+        carbs: it.nutrition2?.carbs ?? null,
+      },
     });
     setHasPhoto(it.hasPhoto);
     setPending(null);
@@ -215,6 +222,7 @@ export function AdminMenu() {
       ingredients,
       allergens: form.allergens,
       nutrition: form.nutrition,
+      nutrition2: form.nutrition2,
     };
     if (editing) {
       update.mutate(
@@ -249,6 +257,7 @@ export function AdminMenu() {
   if (editing !== undefined) {
     const al = form.allergens ?? { containsRu: '', containsUz: '', mayContainRu: '', mayContainUz: '' };
     const nu = form.nutrition ?? { calories: null, protein: null, fat: null, carbs: null };
+    const nu2 = form.nutrition2 ?? { calories: null, protein: null, fat: null, carbs: null };
     const ings = form.ingredients ?? [];
     const setIng = (i: number, patch: Partial<Ingredient>) =>
       setForm({ ...form, ingredients: ings.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) });
@@ -434,6 +443,40 @@ export function AdminMenu() {
               placeholder={t('adm_carbs')}
               value={nu.carbs ?? ''}
               onChange={(e) => setForm({ ...form, nutrition: { ...nu, carbs: numOrNull(e.target.value) } })}
+            />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>{t('adm_nutrition2')}</label>
+          <div className="nut-grid">
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_calories')}
+              value={nu2.calories ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition2: { ...nu2, calories: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_protein')}
+              value={nu2.protein ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition2: { ...nu2, protein: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_fat')}
+              value={nu2.fat ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition2: { ...nu2, fat: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_carbs')}
+              value={nu2.carbs ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition2: { ...nu2, carbs: numOrNull(e.target.value) } })}
             />
           </div>
         </div>

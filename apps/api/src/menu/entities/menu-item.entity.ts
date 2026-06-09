@@ -66,9 +66,13 @@ export class MenuItem extends BaseEntity {
   @Column({ type: 'jsonb', nullable: true })
   allergens!: Allergens | null;
 
-  // Пищевая ценность (КБЖУ) на порцию.
+  // Пищевая ценность (КБЖУ) — для 1-й порции.
   @Column({ type: 'jsonb', nullable: true })
   nutrition!: Nutrition | null;
+
+  // КБЖУ для 2-й порции (вес/цена и КБЖУ у порций разные; состав общий).
+  @Column({ type: 'jsonb', nullable: true })
+  nutrition2!: Nutrition | null;
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
