@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Markup } from 'telegraf';
 import type { Context } from 'telegraf';
 import { Category } from '@eatfit/shared';
+import { NotFoundError } from '../common/errors/domain-error';
 import { Client } from '../clients/entities/client.entity';
 import { MenuService } from '../menu/menu.service';
 import { BotStateService } from './bot-state.service';
@@ -318,7 +319,13 @@ export class BotMenuAdminService {
   }
 
   async doDelete(ctx: Context, client: Client, dishId: string): Promise<void> {
-    await this.menu.remove(dishId);
+    // Идемпотентно: повторный тап «Да» (или удаление уже удалённого блюда) — конечный
+    // результат тот же, поэтому NotFoundError не пробрасываем, а отвечаем как об удалении.
+    try {
+      await this.menu.remove(dishId);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) throw err;
+    }
     await ctx.reply(t(client.language, 'dish_deleted'));
   }
 }

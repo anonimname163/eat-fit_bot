@@ -61,7 +61,10 @@ export class MenuRepository extends TransactionalRepository<MenuItem> {
     return this.repo.save(item);
   }
 
+  // Мягкое удаление: проставляет deleted_at вместо физического DELETE. Так блюдо, на которое
+  // уже ссылаются заказы (FK order_items.menu_item_id без ON DELETE), удаляется без ошибки FK,
+  // а история заказов остаётся целой. find/findOne/QueryBuilder ниже автоматически его прячут.
   async delete(id: string): Promise<void> {
-    await this.repo.delete(id);
+    await this.repo.softDelete(id);
   }
 }

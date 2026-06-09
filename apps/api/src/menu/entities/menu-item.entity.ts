@@ -1,4 +1,4 @@
-import { Entity, Column, Index } from 'typeorm';
+import { Entity, Column, Index, DeleteDateColumn } from 'typeorm';
 import { Category } from '@eatfit/shared';
 import { BaseEntity } from '../../common/database/base.entity';
 import { Money } from '../../common/money/money';
@@ -44,7 +44,15 @@ export class MenuItem extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;
 
-  // Дни недели (ISO: 1=Пн … 7=Вс), когда блюдо показывается в витрине. Пусто = каждый день.
+  // Дни недели (ISO: 1=Пн … 7=Вс), когда блюдо показывается в витрине.
+  // Строгий режим (см. menu.repository.findActive): напитки/десерты с пустым списком
+  // показываются всегда, а ОСНОВНОЕ блюдо с пустым списком НЕ показывается ни в один день.
   @Column({ type: 'int', array: true, default: () => "'{}'" })
   days!: number[];
+
+  // Мягкое удаление: блюдо нельзя удалять физически (на него ссылаются order_items по FK,
+  // иначе нарушится история заказов). softDelete проставляет deleted_at; find/QueryBuilder
+  // TypeORM автоматически исключают такие строки → блюдо пропадает из админки и витрины.
+  @DeleteDateColumn()
+  deletedAt!: Date | null;
 }

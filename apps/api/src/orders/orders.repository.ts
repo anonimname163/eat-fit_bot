@@ -25,9 +25,11 @@ export class OrderRepository extends TransactionalRepository<Order> {
   }
 
   getItems(orderId: string): Promise<OrderItem[]> {
+    // withDeleted: блюдо могло быть удалено (soft-delete) после оформления заказа —
+    // подтягиваем и удалённые, чтобы имя позиции в истории заказа не терялось.
     return this.txHost.tx
       .getRepository(OrderItem)
-      .find({ where: { orderId }, relations: { menuItem: true } });
+      .find({ where: { orderId }, relations: { menuItem: true }, withDeleted: true });
   }
 
   findById(id: string): Promise<Order | null> {

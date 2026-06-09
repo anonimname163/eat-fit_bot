@@ -21,6 +21,14 @@ export class BotCommandsService implements OnApplicationBootstrap {
   async onApplicationBootstrap(): Promise<void> {
     if (this.config.get<boolean>('bot.enabled') === false) return;
 
+    // Глобальный перехватчик ошибок хендлеров: без него исключение из @Action/@On
+    // (напр. NotFoundError при повторном тапе) уходит в дефолт Telegraf — кнопка
+    // остаётся «вечно в загрузке», а пользователь не видит реакции. Логируем и гасим спиннер.
+    this.bot.catch((err, ctx) => {
+      this.logger.error(`Ошибка хендлера бота: ${(err as Error).message}`, (err as Error).stack);
+      void ctx.answerCbQuery().catch(() => undefined);
+    });
+
     // Запуск long polling. НЕ await — launch() резолвится только при остановке бота.
     // .catch обязателен: иначе reject (409 «terminated by other getUpdates», неверный токен,
     // сеть) станет unhandledRejection и уронит весь процесс (Node ≥15) → API недоступен.

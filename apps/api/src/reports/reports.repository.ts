@@ -34,6 +34,9 @@ export class ReportsRepository {
     return this.m
       .getRepository(OrderItem)
       .createQueryBuilder('oi')
+      // withDeleted: блюдо могло быть удалено (soft-delete) после доставки заказа —
+      // без этого innerJoin отсеет такие позиции и занизит выручку/топ блюд в отчёте.
+      .withDeleted()
       .innerJoinAndSelect('oi.menuItem', 'm')
       .innerJoin('oi.order', 'o')
       .where('o.status = :done AND o.created_at >= :start AND o.created_at < :end', {
