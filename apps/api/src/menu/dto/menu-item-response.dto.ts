@@ -1,4 +1,4 @@
-import { Category } from '@eatfit/shared';
+import { Allergens, Category, Ingredient, Nutrition } from '@eatfit/shared';
 import { MenuItem } from '../entities/menu-item.entity';
 
 /**
@@ -16,6 +16,12 @@ export class MenuItemResponseDto {
   hasPhoto: boolean;
   isActive: boolean;
   days: number[];
+  // Подробные поля (для детальной карточки).
+  weightGrams: number | null;
+  orderDeadline: string | null;
+  ingredients: Ingredient[] | null;
+  allergens: Allergens | null;
+  nutrition: Nutrition | null;
   createdAt: Date;
 
   constructor(item: MenuItem) {
@@ -29,6 +35,11 @@ export class MenuItemResponseDto {
     this.hasPhoto = Boolean(item.photoFileId || item.photoUrl || item.photoMime);
     this.isActive = item.isActive;
     this.days = item.days ?? [];
+    this.weightGrams = item.weightGrams ?? null;
+    this.orderDeadline = item.orderDeadline ?? null;
+    this.ingredients = item.ingredients ?? null;
+    this.allergens = item.allergens ?? null;
+    this.nutrition = item.nutrition ?? null;
     this.createdAt = item.createdAt;
   }
 }

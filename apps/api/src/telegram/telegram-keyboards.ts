@@ -71,3 +71,18 @@ export function stepperRow(lang: Lang, itemId: string, qty: number): InlineKeybo
     Markup.button.callback('➕', `qty:inc:${itemId}`),
   ];
 }
+
+/**
+ * Ряд-кнопка «Подробнее» под степпером: web_app, открывает деталь блюда в Mini App (?dish=<id>).
+ * Telegram принимает web_app-кнопки только по HTTPS — без https-URL ряд не добавляем (null).
+ */
+export function detailButtonRow(
+  lang: Lang,
+  itemId: string,
+  webAppUrl?: string,
+): InlineKeyboardButton[] | null {
+  if (!webAppUrl || !webAppUrl.startsWith('https://')) return null;
+  const sep = webAppUrl.includes('?') ? '&' : '?';
+  const url = `${webAppUrl}${sep}dish=${encodeURIComponent(itemId)}`;
+  return [Markup.button.webApp(t(lang, 'btn_details'), url)];
+}

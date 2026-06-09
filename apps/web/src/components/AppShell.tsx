@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { RegistrationForm } from './RegistrationForm';
 import { BottomNav } from './BottomNav';
 import { MenuScreen } from './screens/MenuScreen';
+import { DishDetail } from './screens/DishDetail';
 import { CartScreen } from './screens/CartScreen';
 import { OrdersScreen } from './screens/OrdersScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
@@ -14,6 +16,16 @@ import { AdminScreen } from './screens/AdminScreen';
 export function AppShell() {
   const client = useAuthStore((s) => s.client);
   const tab = useUiStore((s) => s.tab);
+  const detailId = useUiStore((s) => s.detailId);
+  const openDetail = useUiStore((s) => s.openDetail);
+
+  // Deep-link из бота: кнопка «Подробнее» открывает Mini App с ?dish=<id> → сразу деталь блюда.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const dish = new URLSearchParams(window.location.search).get('dish');
+    if (dish) openDetail(dish);
+  }, [openDetail]);
+
   if (!client) return null;
 
   const registered = Boolean(client.phone && client.address);
@@ -35,6 +47,7 @@ export function AppShell() {
         {tab === 'admin' && <AdminScreen />}
       </div>
       <BottomNav />
+      {detailId && <DishDetail />}
     </div>
   );
 }

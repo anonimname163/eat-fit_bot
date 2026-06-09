@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Category } from '@eatfit/shared';
+import { Category, Ingredient } from '@eatfit/shared';
 import {
   useAdminMenu,
   useCreateDish,
@@ -35,7 +35,28 @@ const STR_FIELDS: { key: 'nameRu' | 'nameUz' | 'descriptionRu' | 'descriptionUz'
 const DAY_KEYS: I18nKey[] = ['day_1', 'day_2', 'day_3', 'day_4', 'day_5', 'day_6', 'day_7'];
 
 function emptyForm(): DishBody {
-  return { category: Category.Main, nameRu: '', nameUz: '', descriptionRu: '', descriptionUz: '', price: 0, photoUrl: '', days: [] };
+  return {
+    category: Category.Main,
+    nameRu: '',
+    nameUz: '',
+    descriptionRu: '',
+    descriptionUz: '',
+    price: 0,
+    photoUrl: '',
+    days: [],
+    weightGrams: null,
+    orderDeadline: '',
+    ingredients: [],
+    allergens: { containsRu: '', containsUz: '', mayContainRu: '', mayContainUz: '' },
+    nutrition: { calories: null, protein: null, fat: null, carbs: null },
+  };
+}
+
+// Числовое поле формы: пустая строка → null, иначе число (или null при мусоре).
+function numOrNull(v: string): number | null {
+  if (v.trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 export function AdminMenu() {
@@ -118,6 +139,21 @@ export function AdminMenu() {
       price: Number(it.price),
       photoUrl: '',
       days: it.days ?? [],
+      weightGrams: it.weightGrams ?? null,
+      orderDeadline: it.orderDeadline ?? '',
+      ingredients: it.ingredients ?? [],
+      allergens: {
+        containsRu: it.allergens?.containsRu ?? '',
+        containsUz: it.allergens?.containsUz ?? '',
+        mayContainRu: it.allergens?.mayContainRu ?? '',
+        mayContainUz: it.allergens?.mayContainUz ?? '',
+      },
+      nutrition: {
+        calories: it.nutrition?.calories ?? null,
+        protein: it.nutrition?.protein ?? null,
+        fat: it.nutrition?.fat ?? null,
+        carbs: it.nutrition?.carbs ?? null,
+      },
     });
     setHasPhoto(it.hasPhoto);
     setPending(null);
@@ -153,6 +189,14 @@ export function AdminMenu() {
     });
   };
   const submit = () => {
+    // Отбрасываем пустые строки состава; граммы и вес — целые (API: @IsInt).
+    const ingredients = (form.ingredients ?? [])
+      .filter((r) => r.nameRu?.trim())
+      .map<Ingredient>((r) => ({
+        nameRu: r.nameRu.trim(),
+        nameUz: (r.nameUz ?? '').trim(),
+        grams: r.grams == null ? null : Math.round(r.grams),
+      }));
     const body: DishBody = {
       ...form,
       price: Number(form.price),
@@ -160,6 +204,11 @@ export function AdminMenu() {
       descriptionRu: form.descriptionRu || undefined,
       descriptionUz: form.descriptionUz || undefined,
       days: (form.days ?? []).slice().sort((a, b) => a - b),
+      weightGrams: form.weightGrams == null ? null : Math.round(form.weightGrams),
+      orderDeadline: form.orderDeadline || '',
+      ingredients,
+      allergens: form.allergens,
+      nutrition: form.nutrition,
     };
     if (editing) {
       update.mutate({ id: editing.id, body }, { onSuccess: close });
@@ -188,6 +237,16 @@ export function AdminMenu() {
   };
 
   if (editing !== undefined) {
+    const al = form.allergens ?? { containsRu: '', containsUz: '', mayContainRu: '', mayContainUz: '' };
+    const nu = form.nutrition ?? { calories: null, protein: null, fat: null, carbs: null };
+    const ings = form.ingredients ?? [];
+    const setIng = (i: number, patch: Partial<Ingredient>) =>
+      setForm({ ...form, ingredients: ings.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) });
+    const addIng = () =>
+      setForm({ ...form, ingredients: [...ings, { nameRu: '', nameUz: '', grams: null }] });
+    const removeIng = (i: number) =>
+      setForm({ ...form, ingredients: ings.filter((_, idx) => idx !== i) });
+
     return (
       <div>
         <div className="field">
@@ -234,6 +293,123 @@ export function AdminMenu() {
             onChange={(e) => setForm({ ...form, price: Number(e.target.value) || 0 })}
           />
         </div>
+        <div className="field">
+          <label>{t('adm_weight')}</label>
+          <input
+            className="input"
+            inputMode="numeric"
+            value={form.weightGrams ?? ''}
+            onChange={(e) => setForm({ ...form, weightGrams: numOrNull(e.target.value) })}
+          />
+        </div>
+        <div className="field">
+          <label>{t('adm_deadline')}</label>
+          <input
+            className="input"
+            placeholder="09:00"
+            value={form.orderDeadline ?? ''}
+            onChange={(e) => setForm({ ...form, orderDeadline: e.target.value })}
+          />
+        </div>
+
+        <div className="field">
+          <label>{t('adm_ingredients')}</label>
+          {ings.map((row, i) => (
+            <div className="ing-row" key={i}>
+              <input
+                className="input"
+                placeholder={t('adm_ing_name_ru')}
+                value={row.nameRu}
+                onChange={(e) => setIng(i, { nameRu: e.target.value })}
+              />
+              <input
+                className="input"
+                placeholder={t('adm_ing_name_uz')}
+                value={row.nameUz}
+                onChange={(e) => setIng(i, { nameUz: e.target.value })}
+              />
+              <input
+                className="input ing-grams"
+                inputMode="numeric"
+                placeholder={t('adm_ing_grams')}
+                value={row.grams ?? ''}
+                onChange={(e) => setIng(i, { grams: numOrNull(e.target.value) })}
+              />
+              <button className="btn ing-del" onClick={() => removeIng(i)}>
+                {t('adm_remove_row')}
+              </button>
+            </div>
+          ))}
+          <button className="btn" onClick={addIng} style={{ marginTop: 6 }}>
+            {t('adm_add_ingredient')}
+          </button>
+        </div>
+
+        <div className="field">
+          <label>{t('adm_allergens')}</label>
+          <input
+            className="input"
+            placeholder={t('adm_contains_ru')}
+            value={al.containsRu ?? ''}
+            onChange={(e) => setForm({ ...form, allergens: { ...al, containsRu: e.target.value } })}
+            style={{ marginBottom: 6 }}
+          />
+          <input
+            className="input"
+            placeholder={t('adm_contains_uz')}
+            value={al.containsUz ?? ''}
+            onChange={(e) => setForm({ ...form, allergens: { ...al, containsUz: e.target.value } })}
+            style={{ marginBottom: 6 }}
+          />
+          <input
+            className="input"
+            placeholder={t('adm_may_contain_ru')}
+            value={al.mayContainRu ?? ''}
+            onChange={(e) => setForm({ ...form, allergens: { ...al, mayContainRu: e.target.value } })}
+            style={{ marginBottom: 6 }}
+          />
+          <input
+            className="input"
+            placeholder={t('adm_may_contain_uz')}
+            value={al.mayContainUz ?? ''}
+            onChange={(e) => setForm({ ...form, allergens: { ...al, mayContainUz: e.target.value } })}
+          />
+        </div>
+
+        <div className="field">
+          <label>{t('adm_nutrition')}</label>
+          <div className="nut-grid">
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_calories')}
+              value={nu.calories ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition: { ...nu, calories: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_protein')}
+              value={nu.protein ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition: { ...nu, protein: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_fat')}
+              value={nu.fat ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition: { ...nu, fat: numOrNull(e.target.value) } })}
+            />
+            <input
+              className="input"
+              inputMode="numeric"
+              placeholder={t('adm_carbs')}
+              value={nu.carbs ?? ''}
+              onChange={(e) => setForm({ ...form, nutrition: { ...nu, carbs: numOrNull(e.target.value) } })}
+            />
+          </div>
+        </div>
+
         <div className="field">
           <label>{t('adm_days')}</label>
           <div className="seg">
@@ -404,8 +580,8 @@ export function AdminMenu() {
                 />
               )}
               <div className="dish-name">
-                🍽 {it.nameRu}
-                {it.nameUz && it.nameUz !== it.nameRu ? ` / ${it.nameUz}` : ''}
+                🍽 {it.nameUz || it.nameRu}
+                {it.nameRu && it.nameUz && it.nameUz !== it.nameRu ? ` / ${it.nameRu}` : ''}
               </div>
               {/* Описание в пост/бот не идёт (только название и цена) — показывается лишь в витрине Mini App. */}
               <div className="dish-desc">💵 {formatMoney(it.price)} сум / so‘m</div>

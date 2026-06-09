@@ -1,5 +1,5 @@
 import { Entity, Column, Index, DeleteDateColumn } from 'typeorm';
-import { Category } from '@eatfit/shared';
+import { Category, Ingredient, Allergens, Nutrition } from '@eatfit/shared';
 import { BaseEntity } from '../../common/database/base.entity';
 import { Money } from '../../common/money/money';
 import { moneyTransformer } from '../../common/money/money.transformer';
@@ -40,6 +40,27 @@ export class MenuItem extends BaseEntity {
   // MIME загруженного фото; всегда в выборке → по нему определяем наличие фото без чтения бинаря.
   @Column({ type: 'varchar', nullable: true })
   photoMime!: string | null;
+
+  // ── Подробные поля блюда (показываются в детальной карточке Mini App) ──
+  // Вес/граммовка порции, граммы.
+  @Column({ type: 'int', nullable: true })
+  weightGrams!: number | null;
+
+  // Дедлайн заказа в формате "HH:MM" (например "09:00") — до какого времени принимаем заказ.
+  @Column({ type: 'varchar', length: 5, nullable: true })
+  orderDeadline!: string | null;
+
+  // Состав: список ингредиентов с граммовкой (двуязычные названия).
+  @Column({ type: 'jsonb', nullable: true })
+  ingredients!: Ingredient[] | null;
+
+  // Аллергены: «содержит» / «может содержать» (свободный текст, двуязычно).
+  @Column({ type: 'jsonb', nullable: true })
+  allergens!: Allergens | null;
+
+  // Пищевая ценность (КБЖУ) на порцию.
+  @Column({ type: 'jsonb', nullable: true })
+  nutrition!: Nutrition | null;
 
   @Column({ type: 'boolean', default: true })
   isActive!: boolean;

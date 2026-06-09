@@ -11,8 +11,9 @@ import { Lang, t, esc, formatMoney } from './i18n/bot-i18n';
 export function channelPostText(item: MenuItem): string {
   const nameRu = item.nameRu?.trim();
   const nameUz = item.nameUz?.trim();
+  // В посте — сначала UZ-название, затем RU.
   const nameLine =
-    nameRu && nameUz && nameRu !== nameUz ? `${nameRu} / ${nameUz}` : nameRu || nameUz || '';
+    nameRu && nameUz && nameRu !== nameUz ? `${nameUz} / ${nameRu}` : nameUz || nameRu || '';
 
   // В посте/боте — только название и цена (описание показывается лишь в Mini App).
   const lines = [`🍽 <b>${esc(nameLine)}</b>`];

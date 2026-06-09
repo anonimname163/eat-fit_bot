@@ -9,6 +9,15 @@ export function useMenu() {
   return useQuery({ queryKey: ['menu'], queryFn: () => api<MenuItemDto[]>('/menu') });
 }
 
+/** Одно блюдо по id (для детальной карточки — в т.ч. по deep-link из бота). */
+export function useMenuItem(id: string | null) {
+  return useQuery({
+    queryKey: ['menu', id],
+    queryFn: () => api<MenuItemDto>(`/menu/${id}`),
+    enabled: Boolean(id),
+  });
+}
+
 export function useCart() {
   return useQuery({ queryKey: ['cart'], queryFn: () => api<CartDto>('/cart') });
 }

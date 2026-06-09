@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   ArrayUnique,
   IsArray,
@@ -10,10 +11,13 @@ import {
   IsPositive,
   IsString,
   IsUrl,
+  Matches,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { Category } from '@eatfit/shared';
+import { AllergensDto, IngredientDto, NutritionDto } from './menu-detail.dto';
 
 export class CreateMenuItemDto {
   @IsEnum(Category)
@@ -59,4 +63,32 @@ export class CreateMenuItemDto {
   @Min(1, { each: true })
   @Max(7, { each: true })
   days?: number[];
+
+  // ── Подробные поля (для детальной карточки Mini App) ──
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  weightGrams?: number | null;
+
+  // Дедлайн заказа "HH:MM" (24ч). Пустая строка → сбросить (обрабатывается в сервисе).
+  @IsOptional()
+  @IsString()
+  @Matches(/^(?:[01]\d|2[0-3]):[0-5]\d$|^$/, { message: 'orderDeadline должен быть в формате HH:MM' })
+  orderDeadline?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IngredientDto)
+  ingredients?: IngredientDto[] | null;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => AllergensDto)
+  allergens?: AllergensDto | null;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => NutritionDto)
+  nutrition?: NutritionDto | null;
 }

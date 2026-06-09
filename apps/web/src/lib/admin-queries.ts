@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Category, OrderStatus, Role } from '@eatfit/shared';
+import { Allergens, Category, Ingredient, Nutrition, OrderStatus, Role } from '@eatfit/shared';
 import { api, apiUpload } from './api';
 import { ClientDto, MenuItemDto, OrderDto, SettingsDto } from './types';
 
@@ -13,6 +13,11 @@ export interface DishBody {
   photoUrl?: string;
   isActive?: boolean;
   days?: number[];
+  weightGrams?: number | null;
+  orderDeadline?: string | null;
+  ingredients?: Ingredient[] | null;
+  allergens?: Allergens | null;
+  nutrition?: Nutrition | null;
 }
 
 /* ── заказы ── */

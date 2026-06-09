@@ -1,4 +1,13 @@
-import { Category, Language, OrderStatus, PaymentMethod, Role } from '@eatfit/shared';
+import {
+  Allergens,
+  Category,
+  Ingredient,
+  Language,
+  Nutrition,
+  OrderStatus,
+  PaymentMethod,
+  Role,
+} from '@eatfit/shared';
 
 /** Зеркала response-DTO API (деньги — строки). Источник enum'ов — libs/shared. */
 
@@ -26,6 +35,11 @@ export interface MenuItemDto {
   hasPhoto: boolean;
   isActive: boolean;
   days: number[];
+  weightGrams: number | null;
+  orderDeadline: string | null;
+  ingredients: Ingredient[] | null;
+  allergens: Allergens | null;
+  nutrition: Nutrition | null;
   createdAt: string;
 }
 

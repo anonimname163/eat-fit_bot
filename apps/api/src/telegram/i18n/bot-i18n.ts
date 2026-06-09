@@ -284,6 +284,7 @@ const dict = {
   not_registered: { ru: 'Пожалуйста, завершите регистрацию командой /start', uz: 'Iltimos, /start buyrug‘i bilan ro‘yxatdan o‘ting' },
   dish_not_found: { ru: 'Блюдо не найдено или недоступно.', uz: 'Taom topilmadi yoki mavjud emas.' },
   pcs: { ru: 'шт', uz: 'dona' },
+  btn_details: { ru: '🔎 Подробнее', uz: '🔎 Batafsil' },
 } satisfies Record<string, Entry>;
 
 export type I18nKey = keyof typeof dict;

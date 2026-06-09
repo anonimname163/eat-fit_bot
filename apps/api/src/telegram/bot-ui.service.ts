@@ -9,7 +9,7 @@ import { currentIsoWeekday } from '../common/time/weekday';
 import { CartService } from '../orders/cart/cart.service';
 import { BotStateService } from './bot-state.service';
 import { Lang, t, categoryName, pick, formatMoney, esc } from './i18n/bot-i18n';
-import { mainMenuKeyboard, stepperRow } from './telegram-keyboards';
+import { mainMenuKeyboard, stepperRow, detailButtonRow } from './telegram-keyboards';
 
 /**
  * Презентационный слой бота. Витрина — карточки блюд (фото + степпер); количество правится
@@ -116,7 +116,10 @@ export class BotUiService {
     const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
     const text = `🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`;
 
-    const markup = { reply_markup: { inline_keyboard: [stepperRow(lang, item.id, qty)] } };
+    // Под степпером — кнопка «Подробнее» (web_app в Mini App), если задан https web app url.
+    const detailRow = detailButtonRow(lang, item.id, this.webAppUrl);
+    const rows = detailRow ? [stepperRow(lang, item.id, qty), detailRow] : [stepperRow(lang, item.id, qty)];
+    const markup = { reply_markup: { inline_keyboard: rows } };
     const photo = await this.photoInput(item);
     if (photo) {
       try {

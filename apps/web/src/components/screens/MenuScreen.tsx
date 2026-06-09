@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Category, Language } from '@eatfit/shared';
 import { useMenu, useCart, useAddToCart, useSetQuantity } from '@/lib/queries';
 import { useAuthStore } from '@/store/auth.store';
+import { useUiStore } from '@/store/ui.store';
 import { useT, type I18nKey } from '@/lib/i18n';
 import { formatMoney, pick } from '@/lib/format';
 import { Stepper } from '@/components/Stepper';
@@ -18,6 +19,7 @@ const CATS: { cat: Category; key: I18nKey }[] = [
 export function MenuScreen() {
   const t = useT();
   const lang = useAuthStore((s) => s.client?.language ?? Language.Ru);
+  const openDetail = useUiStore((s) => s.openDetail);
   const { data: menu, isLoading } = useMenu();
   const { data: cart } = useCart();
   const add = useAddToCart();
@@ -65,10 +67,17 @@ export function MenuScreen() {
                 <div className="dish">
                   {item.hasPhoto && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img className="dish-photo" src={`/api/menu/${item.id}/photo`} alt="" />
+                    <img
+                      className="dish-photo dish-tap"
+                      src={`/api/menu/${item.id}/photo`}
+                      alt=""
+                      onClick={() => openDetail(item.id)}
+                    />
                   )}
                   <div className="dish-body">
-                    <div className="dish-name">{pick(lang, item.nameRu, item.nameUz)}</div>
+                    <div className="dish-name dish-tap" onClick={() => openDetail(item.id)}>
+                      {pick(lang, item.nameRu, item.nameUz)}
+                    </div>
                     {pick(lang, item.descriptionRu, item.descriptionUz) && (
                       <div className="dish-desc">{pick(lang, item.descriptionRu, item.descriptionUz)}</div>
                     )}
@@ -83,6 +92,9 @@ export function MenuScreen() {
                         onChange={(q) => change(item, q)}
                       />
                     </div>
+                    <button className="dish-more" onClick={() => openDetail(item.id)}>
+                      {t('detail_open')} →
+                    </button>
                   </div>
                 </div>
               </div>
