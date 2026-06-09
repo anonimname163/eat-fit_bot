@@ -243,7 +243,7 @@ export class StaffUpdate {
       [Markup.button.callback(t(lang, 'btn_publish_channel'), `admin:publish:${item.id}`)],
     ]);
     const text = this.postText(item);
-    const photo = item.photoFileId || item.photoUrl;
+    const photo = await this.ui.photoInput(item);
     if (photo) {
       await ctx.replyWithPhoto(photo, { caption: text, parse_mode: 'HTML', ...markup });
     } else {
@@ -270,7 +270,7 @@ export class StaffUpdate {
     }
     try {
       const text = this.postText(item);
-      const photo = item.photoFileId || item.photoUrl;
+      const photo = await this.ui.photoInput(item);
       const extra = { parse_mode: 'HTML' as const, ...this.orderButton(item, lang) };
       if (photo) {
         await ctx.telegram.sendPhoto(channelId, photo, { caption: text, ...extra });

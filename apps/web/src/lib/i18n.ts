@@ -107,6 +107,7 @@ const dict = {
   adm_photo_uploading: { ru: 'Загрузка фото…', uz: 'Rasm yuklanmoqda…' },
   adm_photo_remove: { ru: 'Удалить фото', uz: 'Rasmni o‘chirish' },
   adm_photo_save_first: { ru: 'Сначала сохраните блюдо, потом добавьте фото', uz: 'Avval taomni saqlang, keyin rasm qo‘shing' },
+  adm_photo_error: { ru: 'Не удалось загрузить фото: ', uz: 'Rasmni yuklab bo‘lmadi: ' },
   adm_copy_link: { ru: '🔗 Ссылка', uz: '🔗 Havola' },
   adm_link_copied: { ru: 'Ссылка скопирована', uz: 'Havola nusxalandi' },
   adm_post_preview: { ru: '👁 Пост', uz: '👁 Post' },

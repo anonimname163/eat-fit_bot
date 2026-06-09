@@ -94,7 +94,22 @@ export class BotUiService {
     if (client.telegramId) this.state.setMenuMessages(client.telegramId, ids);
   }
 
-  /** Карточка блюда: фото (file_id/url) или текст + ряд-степпер. Возвращает message_id. */
+  /**
+   * Telegram-вход для фото блюда: file_id или внешний URL как есть, иначе загруженный
+   * с сайта байт-буфер (photoData, определяем по photoMime), иначе null. Так фото
+   * показывается независимо от источника — раньше загруженное с сайта фото в боте не выводилось.
+   */
+  async photoInput(item: MenuItem): Promise<string | { source: Buffer } | null> {
+    if (item.photoFileId) return item.photoFileId;
+    if (item.photoUrl) return item.photoUrl;
+    if (item.photoMime) {
+      const bytes = await this.menu.findPhotoBytes(item.id);
+      if (bytes) return { source: bytes.data };
+    }
+    return null;
+  }
+
+  /** Карточка блюда: фото (file_id/url/загруженный байт-буфер) или текст + ряд-степпер. Возвращает message_id. */
   async sendDishCard(ctx: Context, lang: Lang, item: MenuItem, qty: number): Promise<number | undefined> {
     const name = pick(lang, item.nameRu, item.nameUz);
     const desc = pick(lang, item.descriptionRu, item.descriptionUz);
@@ -104,7 +119,7 @@ export class BotUiService {
     text += `💵 ${esc(price)}`;
 
     const markup = { reply_markup: { inline_keyboard: [stepperRow(lang, item.id, qty)] } };
-    const photo = item.photoFileId || item.photoUrl;
+    const photo = await this.photoInput(item);
     if (photo) {
       try {
         const msg = await ctx.replyWithPhoto(photo, { caption: text, parse_mode: 'HTML', ...markup });

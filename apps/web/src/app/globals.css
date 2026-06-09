@@ -118,6 +118,7 @@ button {
   font-size: 13px;
   color: var(--hint);
   margin: 2px 0;
+  white-space: pre-line; /* сохраняем переносы строк из описания блюда */
 }
 .dish-price {
   font-weight: 600;
@@ -197,6 +198,7 @@ button {
 .textarea {
   min-height: 72px;
   resize: vertical;
+  font: inherit;
 }
 .err {
   color: var(--danger);

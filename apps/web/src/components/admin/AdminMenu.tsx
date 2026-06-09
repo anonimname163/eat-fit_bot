@@ -136,6 +136,7 @@ export function AdminMenu() {
             setHasPhoto(true);
             setPhotoVer((v) => v + 1);
           },
+          onError: (e) => window.alert(t('adm_photo_error') + (e as Error).message),
         },
       );
     } else {
@@ -168,7 +169,17 @@ export function AdminMenu() {
       onSuccess: (created) => {
         // Блюдо создано — если при создании выбрали фото, грузим его на новый id и затем закрываем.
         if (pendingPhoto) {
-          uploadPhoto.mutate({ id: created.id, file: pendingPhoto }, { onSuccess: close, onError: close });
+          uploadPhoto.mutate(
+            { id: created.id, file: pendingPhoto },
+            {
+              onSuccess: close,
+              // Блюдо уже создано — сообщаем, что не загрузилось только фото, и закрываем форму.
+              onError: (e) => {
+                window.alert(t('adm_photo_error') + (e as Error).message);
+                close();
+              },
+            },
+          );
         } else {
           close();
         }
@@ -193,16 +204,27 @@ export function AdminMenu() {
             ))}
           </div>
         </div>
-        {STR_FIELDS.map((f) => (
-          <div className="field" key={f.key}>
-            <label>{t(f.label)}</label>
-            <input
-              className="input"
-              value={form[f.key] ?? ''}
-              onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-            />
-          </div>
-        ))}
+        {STR_FIELDS.map((f) => {
+          const multiline = f.key === 'descriptionRu' || f.key === 'descriptionUz';
+          return (
+            <div className="field" key={f.key}>
+              <label>{t(f.label)}</label>
+              {multiline ? (
+                <textarea
+                  className="textarea"
+                  value={form[f.key] ?? ''}
+                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                />
+              ) : (
+                <input
+                  className="input"
+                  value={form[f.key] ?? ''}
+                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                />
+              )}
+            </div>
+          );
+        })}
         <div className="field">
           <label>{t('adm_price')}</label>
           <input
