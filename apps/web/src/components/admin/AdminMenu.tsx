@@ -84,12 +84,28 @@ export function AdminMenu() {
   // Версия фото — для сброса кэша <img> после загрузки/удаления.
   const [photoVer, setPhotoVer] = useState(0);
   const [hasPhoto, setHasPhoto] = useState(false);
+  // Фото, выбранное при СОЗДАНИИ нового блюда: грузим после create (нужен id). preview — локальный object-URL.
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [pendingPreview, setPendingPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const close = () => setEditing(undefined);
+  // Запомнить/сбросить отложенное фото, освобождая прежний object-URL (без утечек памяти).
+  const setPending = (file: File | null) => {
+    setPendingPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+    setPendingPhoto(file);
+  };
+
+  const close = () => {
+    setPending(null);
+    setEditing(undefined);
+  };
   const openNew = () => {
     setForm(emptyForm());
     setHasPhoto(false);
+    setPending(null);
     setEditing(null);
   };
   const openEdit = (it: MenuItemDto) => {
@@ -104,21 +120,27 @@ export function AdminMenu() {
       days: it.days ?? [],
     });
     setHasPhoto(it.hasPhoto);
+    setPending(null);
     setEditing(it);
   };
   const onPickPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // позволяем выбрать тот же файл повторно
-    if (!file || !editing) return;
-    uploadPhoto.mutate(
-      { id: editing.id, file },
-      {
-        onSuccess: () => {
-          setHasPhoto(true);
-          setPhotoVer((v) => v + 1);
+    if (!file) return;
+    // Редактирование — грузим сразу (есть id); создание — откладываем до сохранения.
+    if (editing) {
+      uploadPhoto.mutate(
+        { id: editing.id, file },
+        {
+          onSuccess: () => {
+            setHasPhoto(true);
+            setPhotoVer((v) => v + 1);
+          },
         },
-      },
-    );
+      );
+    } else {
+      setPending(file);
+    }
   };
   const onRemovePhoto = () => {
     if (!editing) return;
@@ -138,8 +160,20 @@ export function AdminMenu() {
       descriptionUz: form.descriptionUz || undefined,
       days: (form.days ?? []).slice().sort((a, b) => a - b),
     };
-    if (editing) update.mutate({ id: editing.id, body }, { onSuccess: close });
-    else create.mutate(body, { onSuccess: close });
+    if (editing) {
+      update.mutate({ id: editing.id, body }, { onSuccess: close });
+      return;
+    }
+    create.mutate(body, {
+      onSuccess: (created) => {
+        // Блюдо создано — если при создании выбрали фото, грузим его на новый id и затем закрываем.
+        if (pendingPhoto) {
+          uploadPhoto.mutate({ id: created.id, file: pendingPhoto }, { onSuccess: close, onError: close });
+        } else {
+          close();
+        }
+      },
+    });
   };
 
   if (editing !== undefined) {
@@ -205,41 +239,49 @@ export function AdminMenu() {
         </div>
         <div className="field">
           <label>{t('adm_photo')}</label>
-          {editing ? (
-            <>
-              {hasPhoto && (
-                <img
-                  className="dish-photo"
-                  src={`/api/menu/${editing.id}/photo?v=${photoVer}`}
-                  alt=""
-                  style={{ marginBottom: 8, borderRadius: 8, maxHeight: 160, objectFit: 'cover' }}
-                />
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                onChange={onPickPhoto}
-                style={{ display: 'none' }}
-              />
-              <div className="seg">
-                <button
-                  className="btn"
-                  disabled={uploadPhoto.isPending}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {uploadPhoto.isPending ? t('adm_photo_uploading') : t('adm_photo_upload')}
-                </button>
-                {hasPhoto && (
-                  <button className="btn" disabled={deletePhoto.isPending} onClick={onRemovePhoto}>
-                    {t('adm_photo_remove')}
-                  </button>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="muted">{t('adm_photo_save_first')}</div>
+          {/* Превью: при редактировании — фото с сервера; при создании — локальный выбранный файл. */}
+          {editing && hasPhoto && (
+            <img
+              className="dish-photo"
+              src={`/api/menu/${editing.id}/photo?v=${photoVer}`}
+              alt=""
+              style={{ marginBottom: 8, borderRadius: 8, maxHeight: 160, objectFit: 'cover' }}
+            />
           )}
+          {!editing && pendingPreview && (
+            <img
+              className="dish-photo"
+              src={pendingPreview}
+              alt=""
+              style={{ marginBottom: 8, borderRadius: 8, maxHeight: 160, objectFit: 'cover' }}
+            />
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={onPickPhoto}
+            style={{ display: 'none' }}
+          />
+          <div className="seg">
+            <button
+              className="btn"
+              disabled={uploadPhoto.isPending}
+              onClick={() => fileRef.current?.click()}
+            >
+              {uploadPhoto.isPending ? t('adm_photo_uploading') : t('adm_photo_upload')}
+            </button>
+            {editing && hasPhoto && (
+              <button className="btn" disabled={deletePhoto.isPending} onClick={onRemovePhoto}>
+                {t('adm_photo_remove')}
+              </button>
+            )}
+            {!editing && pendingPhoto && (
+              <button className="btn" onClick={() => setPending(null)}>
+                {t('adm_photo_remove')}
+              </button>
+            )}
+          </div>
         </div>
         <div className="seg">
           <button className="btn" onClick={close}>
@@ -247,7 +289,14 @@ export function AdminMenu() {
           </button>
           <button
             className="btn btn-primary"
-            disabled={!form.nameRu || !form.nameUz || form.price <= 0 || create.isPending || update.isPending}
+            disabled={
+              !form.nameRu ||
+              !form.nameUz ||
+              form.price <= 0 ||
+              create.isPending ||
+              update.isPending ||
+              uploadPhoto.isPending
+            }
             onClick={submit}
           >
             {t('save')}
