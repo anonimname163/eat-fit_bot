@@ -4,6 +4,7 @@
  */
 export interface TelegramWebApp {
   initData: string;
+  initDataUnsafe?: { start_param?: string };
   colorScheme: 'light' | 'dark';
   themeParams: Record<string, string>;
   ready(): void;
@@ -25,6 +26,19 @@ export function getWebApp(): TelegramWebApp | null {
 
 export function getInitData(): string {
   return getWebApp()?.initData ?? '';
+}
+
+/**
+ * start_param Mini App (из ?startapp=... — напр. кнопка «Подробнее» под постом в канал).
+ * Берём из SDK; фолбэк — tgWebAppStartParam в URL (hash/query) до инициализации SDK.
+ */
+export function getStartParam(): string {
+  const fromSdk = getWebApp()?.initDataUnsafe?.start_param;
+  if (fromSdk) return fromSdk;
+  if (typeof window === 'undefined') return '';
+  const probe = window.location.hash + '&' + window.location.search;
+  const m = probe.match(/[#&?]tgWebAppStartParam=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
 }
 
 /** Запущены ли мы внутри Telegram (есть подписанная initData). */

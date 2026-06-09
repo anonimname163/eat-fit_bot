@@ -21,11 +21,20 @@ export function channelPostText(item: MenuItem): string {
   return lines.join('\n');
 }
 
-/** Inline-кнопка «Заказать» с deep link (если задан BOT_USERNAME) — запуск + добавление в корзину. */
+/**
+ * Inline-кнопки под постом в канал (если задан BOT_USERNAME): «Заказать» (deep link, запуск +
+ * добавление в корзину) и «Подробнее» (startapp — открывает Mini App на детали блюда).
+ * В КАНАЛЕ web_app-кнопки запрещены, поэтому «Подробнее» — URL-кнопка через ?startapp= (для
+ * этого у бота должно быть настроено Mini App в BotFather; детали читаются из start_param).
+ */
 export function orderDeepLinkButton(item: MenuItem, lang: Lang, botUsername?: string) {
   if (!botUsername) return {};
-  const url = `https://t.me/${botUsername}?start=item_${item.id}`;
-  return Markup.inlineKeyboard([[Markup.button.url(t(lang, 'post_order_btn'), url)]]);
+  const orderUrl = `https://t.me/${botUsername}?start=item_${item.id}`;
+  const detailUrl = `https://t.me/${botUsername}?startapp=dish_${item.id}`;
+  return Markup.inlineKeyboard([
+    [Markup.button.url(t(lang, 'post_order_btn'), orderUrl)],
+    [Markup.button.url(t(lang, 'btn_details'), detailUrl)],
+  ]);
 }
 
 /** Фото для поста: загруженный файл недоступен боту по URL → отдаём file_id/внешний URL, иначе null. */

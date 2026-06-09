@@ -57,7 +57,7 @@ export class MenuService {
       isActive: dto.isActive ?? true,
       days: dto.days ?? [],
       weightGrams: dto.weightGrams ?? null,
-      orderDeadline: dto.orderDeadline ? dto.orderDeadline : null,
+      orderDeadline: normalizeDeadline(dto.orderDeadline),
       ingredients: normalizeIngredients(dto.ingredients),
       allergens: normalizeAllergens(dto.allergens),
       nutrition: normalizeNutrition(dto.nutrition),
@@ -78,7 +78,7 @@ export class MenuService {
     if (dto.isActive !== undefined) item.isActive = dto.isActive;
     if (dto.days !== undefined) item.days = dto.days;
     if (dto.weightGrams !== undefined) item.weightGrams = dto.weightGrams ?? null;
-    if (dto.orderDeadline !== undefined) item.orderDeadline = dto.orderDeadline ? dto.orderDeadline : null;
+    if (dto.orderDeadline !== undefined) item.orderDeadline = normalizeDeadline(dto.orderDeadline);
     if (dto.ingredients !== undefined) item.ingredients = normalizeIngredients(dto.ingredients);
     if (dto.allergens !== undefined) item.allergens = normalizeAllergens(dto.allergens);
     if (dto.nutrition !== undefined) item.nutrition = normalizeNutrition(dto.nutrition);
@@ -120,6 +120,16 @@ export class MenuService {
     item.photoUrl = null;
     return new MenuItemResponseDto(await this.repo.save(item));
   }
+}
+
+/** Дедлайн "H:MM"/"HH:MM" → нормализуем в "HH:MM" (час с ведущим нулём). Пусто/мусор → null. */
+function normalizeDeadline(v?: string | null): string | null {
+  if (!v) return null;
+  const m = v.trim().match(/^(\d{1,2}):([0-5]\d)$/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  if (h > 23) return null;
+  return `${String(h).padStart(2, '0')}:${m[2]}`;
 }
 
 /** Состав: отбрасываем строки без названия; пустой список → null. */

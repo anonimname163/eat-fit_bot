@@ -317,13 +317,13 @@ button {
   color: var(--link);
 }
 .dd-img {
-  width: 100%;
-  height: 240px;
-  object-fit: cover;
+  width: 100%; /* на всю ширину сайта */
+  height: auto; /* полная высота изображения, без обрезки */
   display: block;
   background: var(--secondary-bg);
 }
 .dd-img-empty {
+  min-height: 220px; /* у плейсхолдера нет собственной высоты картинки */
   display: flex;
   align-items: center;
   justify-content: center;

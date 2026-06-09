@@ -211,10 +211,14 @@ export function AdminMenu() {
       nutrition: form.nutrition,
     };
     if (editing) {
-      update.mutate({ id: editing.id, body }, { onSuccess: close });
+      update.mutate(
+        { id: editing.id, body },
+        { onSuccess: close, onError: (e) => window.alert(`${t('save')}: ${(e as Error).message}`) },
+      );
       return;
     }
     create.mutate(body, {
+      onError: (e) => window.alert(`${t('save')}: ${(e as Error).message}`),
       onSuccess: (created) => {
         // Блюдо создано — если при создании выбрали фото, грузим его на новый id и затем закрываем.
         if (pendingPhoto) {

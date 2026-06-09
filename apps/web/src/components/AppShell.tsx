@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { getStartParam } from '@/lib/telegram';
 import { useAuthStore } from '@/store/auth.store';
 import { useUiStore } from '@/store/ui.store';
 import { RegistrationForm } from './RegistrationForm';
@@ -19,11 +20,16 @@ export function AppShell() {
   const detailId = useUiStore((s) => s.detailId);
   const openDetail = useUiStore((s) => s.openDetail);
 
-  // Deep-link из бота: кнопка «Подробнее» открывает Mini App с ?dish=<id> → сразу деталь блюда.
+  // Deep-link из бота/канала: открыть деталь блюда. Источники:
+  //  - web_app кнопка в боте: ?dish=<id> в URL;
+  //  - startapp-ссылка под постом в канал: start_param = "dish_<id>".
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const dish = new URLSearchParams(window.location.search).get('dish');
-    if (dish) openDetail(dish);
+    const fromQuery = new URLSearchParams(window.location.search).get('dish');
+    const sp = getStartParam();
+    const fromStart = sp.startsWith('dish_') ? sp.slice('dish_'.length) : null;
+    const id = fromQuery || fromStart;
+    if (id) openDetail(id);
   }, [openDetail]);
 
   if (!client) return null;

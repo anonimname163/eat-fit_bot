@@ -70,10 +70,11 @@ export class CreateMenuItemDto {
   @Min(0)
   weightGrams?: number | null;
 
-  // Дедлайн заказа "HH:MM" (24ч). Пустая строка → сбросить (обрабатывается в сервисе).
+  // Дедлайн заказа "H:MM"/"HH:MM" (24ч; час можно однозначный — 9:00). Пустая строка → сбросить.
+  // Нормализация в "HH:MM" — в сервисе.
   @IsOptional()
   @IsString()
-  @Matches(/^(?:[01]\d|2[0-3]):[0-5]\d$|^$/, { message: 'orderDeadline должен быть в формате HH:MM' })
+  @Matches(/^(?:[01]?\d|2[0-3]):[0-5]\d$|^$/, { message: 'orderDeadline должен быть в формате HH:MM' })
   orderDeadline?: string | null;
 
   @IsOptional()
