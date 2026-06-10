@@ -144,28 +144,36 @@ export class ClientUpdate {
     await ctx.answerCbQuery();
   }
 
-  @Action(/^qty:(inc|dec):(.+)$/)
+  @Action(/^qty:(inc|dec):(.+):(\d+)$/)
   async onQtyStep(@Ctx() ctx: Context): Promise<void> {
     if (await this.dupCallback(ctx)) return;
     const dir = this.match(ctx, 1);
     const itemId = this.match(ctx, 2);
+    const portion = Number(this.match(ctx, 3));
     const client = await this.clients.findByTelegramId(String(ctx.from?.id));
     if (!client) return void (await ctx.answerCbQuery());
     const lang = this.ui.langOf(client);
     try {
-      const current = (await this.cart.getCart()).items.find(
-        (i) => i.menuItemId === itemId && i.portion === 1,
-      );
-      const qty = current?.quantity ?? 0;
+      const item = await this.menu.findById(itemId);
+      if (!item) return void (await ctx.answerCbQuery());
+      const qty = this.qtyInCart(await this.cart.getCart(), itemId, portion);
       const next = dir === 'inc' ? qty + 1 : Math.max(0, qty - 1);
       await ctx.answerCbQuery();
       if (next === qty) return; // ➖ на нуле — без изменений
-      await this.cart.setQuantity(itemId, next);
-      // Обновляем клавиатуру карточки на месте: степпер + «Подробнее» (кнопка не пропадает).
-      await ctx.editMessageReplyMarkup(this.ui.dishCardKeyboard(lang, itemId, next));
+      await this.cart.setQuantity(itemId, next, portion);
+      // Перерисовываем клавиатуру карточки на месте: оба степпера (по порциям) + «Подробнее».
+      const cart = await this.cart.getCart();
+      const qty1 = this.qtyInCart(cart, itemId, 1);
+      const qty2 = this.qtyInCart(cart, itemId, 2);
+      await ctx.editMessageReplyMarkup(this.ui.dishCardKeyboard(lang, item, qty1, qty2));
     } catch (err) {
       await ctx.answerCbQuery(this.errText(err, lang));
     }
+  }
+
+  /** Количество позиции (id+порция) в корзине. */
+  private qtyInCart(cart: CartResponseDto, itemId: string, portion: number): number {
+    return cart.items.find((i) => i.menuItemId === itemId && i.portion === portion)?.quantity ?? 0;
   }
 
   // ──────────────────── оформление заказа ────────────────────
@@ -699,8 +707,10 @@ export class ClientUpdate {
   private cartSummary(lang: Lang, cart: CartResponseDto, address: string): string {
     const lines = [`<b>${esc(t(lang, 'cart_title'))}</b>`];
     for (const it of cart.items) {
+      // Вес порции в строке — чтобы две порции одного блюда (1️⃣/2️⃣) различались.
+      const w = it.weightGrams != null ? ` (${it.weightGrams} ${esc(t(lang, 'unit_gram'))})` : '';
       lines.push(
-        `• ${esc(pick(lang, it.nameRu, it.nameUz))} ×${it.quantity} — ${esc(formatMoney(it.lineTotal))} ${esc(t(lang, 'currency'))}`,
+        `• ${esc(pick(lang, it.nameRu, it.nameUz))}${w} ×${it.quantity} — ${esc(formatMoney(it.lineTotal))} ${esc(t(lang, 'currency'))}`,
       );
     }
     lines.push(`<b>${esc(t(lang, 'cart_total'))}: ${esc(formatMoney(cart.total))} ${esc(t(lang, 'currency'))}</b>`);

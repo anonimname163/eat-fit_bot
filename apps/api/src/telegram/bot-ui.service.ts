@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Category, Language, Role } from '@eatfit/shared';
 import type { Context } from 'telegraf';
+import type { InlineKeyboardButton } from 'telegraf/typings/core/types/typegram';
 import { Client } from '../clients/entities/client.entity';
 import { MenuItem } from '../menu/entities/menu-item.entity';
 import { MenuRepository } from '../menu/menu.repository';
@@ -50,11 +51,12 @@ export class BotUiService {
     );
   }
 
+  /** Количества в корзине по ключу `menuItemId:portion` (порции считаются раздельно). */
   private async cartQuantities(): Promise<Map<string, number>> {
     const map = new Map<string, number>();
     try {
       const cart = await this.cart.getCart();
-      for (const it of cart.items) map.set(it.menuItemId, it.quantity);
+      for (const it of cart.items) map.set(`${it.menuItemId}:${it.portion}`, it.quantity);
     } catch {
       /* actor не установлен — 0 */
     }
@@ -82,7 +84,9 @@ export class BotUiService {
       const head = await ctx.reply(`<b>${esc(categoryName(lang, cat))}</b>`, { parse_mode: 'HTML' });
       ids.push(head.message_id);
       for (const item of catItems) {
-        const id = await this.sendDishCard(ctx, lang, item, quantities.get(item.id) ?? 0);
+        const qty1 = quantities.get(`${item.id}:1`) ?? 0;
+        const qty2 = quantities.get(`${item.id}:2`) ?? 0;
+        const id = await this.sendDishCard(ctx, lang, item, qty1, qty2);
         if (id) ids.push(id);
       }
     }
@@ -109,16 +113,38 @@ export class BotUiService {
     return null;
   }
 
-  /** Карточка блюда: фото (file_id/url/загруженный байт-буфер) или текст + ряд-степпер. Возвращает message_id. */
-  async sendDishCard(ctx: Context, lang: Lang, item: MenuItem, qty: number): Promise<number | undefined> {
-    // В боте показываем только название и цену; описание — только в Mini App.
+  /** Подпись карточки: название + цена(ы). Для блюда со 2-й порцией — обе порции с весом. */
+  private dishCardCaption(lang: Lang, item: MenuItem): string {
     const name = pick(lang, item.nameRu, item.nameUz);
+    if (item.price2 != null) {
+      const p1 = this.portionLine(lang, '1️⃣', item.weightGrams, item.price.toString());
+      const p2 = this.portionLine(lang, '2️⃣', item.weightGrams2, item.price2.toString());
+      return `🍽 <b>${esc(name)}</b>\n${p1}\n${p2}`;
+    }
     const price = `${formatMoney(item.price.toString())} ${t(lang, 'currency')}`;
-    const text = `🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`;
+    return `🍽 <b>${esc(name)}</b>\n💵 ${esc(price)}`;
+  }
 
-    // Степпер + кнопка «Подробнее» (web_app в Mini App) — единый билдер, чтобы при правке
+  /** Строка порции в подписи: «1️⃣ 250 г · 30 000 сум» (вес опционален). */
+  private portionLine(lang: Lang, label: string, weight: number | null, price: string): string {
+    const w = weight != null ? `${weight} ${t(lang, 'unit_gram')} · ` : '';
+    return `${label} ${esc(w)}${esc(formatMoney(price))} ${esc(t(lang, 'currency'))}`;
+  }
+
+  /** Карточка блюда: фото (file_id/url/загруженный байт-буфер) или текст + ряд-степпер. Возвращает message_id. */
+  async sendDishCard(
+    ctx: Context,
+    lang: Lang,
+    item: MenuItem,
+    qty1: number,
+    qty2: number,
+  ): Promise<number | undefined> {
+    // В боте показываем только название и цену; описание — только в Mini App.
+    const text = this.dishCardCaption(lang, item);
+
+    // Степпер(ы) + кнопка «Подробнее» (web_app в Mini App) — единый билдер, чтобы при правке
     // счётчика (editMessageReplyMarkup) кнопка «Подробнее» не пропадала.
-    const markup = { reply_markup: this.dishCardKeyboard(lang, item.id, qty) };
+    const markup = { reply_markup: this.dishCardKeyboard(lang, item, qty1, qty2) };
     const photo = await this.photoInput(item);
     if (photo) {
       try {
@@ -138,11 +164,17 @@ export class BotUiService {
    * Единый источник — используется и при отправке карточки, и при правке счётчика
    * (editMessageReplyMarkup), чтобы «Подробнее» не пропадала при ➖/➕.
    */
-  dishCardKeyboard(lang: Lang, itemId: string, qty: number) {
-    const detailRow = detailButtonRow(lang, itemId, this.webAppUrl);
-    const rows = detailRow
-      ? [stepperRow(lang, itemId, qty), detailRow]
-      : [stepperRow(lang, itemId, qty)];
+  dishCardKeyboard(lang: Lang, item: MenuItem, qty1: number, qty2: number) {
+    const rows: InlineKeyboardButton[][] = [];
+    if (item.price2 != null) {
+      // Две порции — отдельный степпер на каждую (метка «1️⃣»/«2️⃣» в средней кнопке).
+      rows.push(stepperRow(lang, item.id, qty1, 1, '1️⃣'));
+      rows.push(stepperRow(lang, item.id, qty2, 2, '2️⃣'));
+    } else {
+      rows.push(stepperRow(lang, item.id, qty1, 1));
+    }
+    const detailRow = detailButtonRow(lang, item.id, this.webAppUrl);
+    if (detailRow) rows.push(detailRow);
     return { inline_keyboard: rows };
   }
 
@@ -154,7 +186,7 @@ export class BotUiService {
     const lang = this.langOf(client);
     const row = detailButtonRow(lang, item.id, this.webAppUrl);
     if (!row) {
-      await this.sendDishCard(ctx, lang, item, 0);
+      await this.sendDishCard(ctx, lang, item, 0, 0);
       return;
     }
     const name = pick(lang, item.nameRu, item.nameUz);

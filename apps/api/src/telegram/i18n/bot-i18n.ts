@@ -174,6 +174,7 @@ const dict = {
   group_phone: { ru: '📞 Телефон', uz: '📞 Telefon' },
   total_calories: { ru: 'Калорийность', uz: 'Kaloriya' },
   unit_kcal: { ru: 'ккал', uz: 'kkal' },
+  unit_gram: { ru: 'г', uz: 'g' },
 
   // ---- Админ ----
   admin_panel_title: { ru: '⚙️ Панель администратора', uz: '⚙️ Administrator paneli' },
