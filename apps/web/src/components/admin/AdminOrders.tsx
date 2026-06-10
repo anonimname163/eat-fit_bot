@@ -83,6 +83,11 @@ export function AdminOrders() {
                 {formatMoney(o.total)} {t('currency')}
               </strong>
             </div>
+            {o.totalCalories != null && (
+              <div className="dish-desc" style={{ marginTop: 4 }}>
+                🔥 {t('total_calories')}: {formatMoney(o.totalCalories)} {t('unit_kcal')}
+              </div>
+            )}
             {actions && (
               <div className="seg" style={{ marginTop: 8 }}>
                 {actions.map((a) => (

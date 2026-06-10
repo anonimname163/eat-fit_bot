@@ -71,6 +71,7 @@ export class OrdersService {
         throw new ConflictError('Одно из блюд недоступно — обновите корзину');
       }
       const weight = line.portion === 2 ? item.weightGrams2 : item.weightGrams;
+      const nutrition = line.portion === 2 ? item.nutrition2 : item.nutrition;
       total = total.add(price.multiply(line.quantity));
       itemsData.push({
         menuItemId: item.id,
@@ -78,6 +79,7 @@ export class OrdersService {
         priceAtOrder: price,
         portion: line.portion,
         portionWeightGrams: weight,
+        caloriesAtOrder: nutrition?.calories ?? null,
       });
     }
 

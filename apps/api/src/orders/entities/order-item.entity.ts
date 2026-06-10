@@ -36,4 +36,9 @@ export class OrderItem extends BaseEntity {
   // Снимок веса выбранной порции (для отображения; кухня видит размер порции).
   @Column({ type: 'int', nullable: true })
   portionWeightGrams!: number | null;
+
+  // Снимок калорийности выбранной порции на момент заказа (ккал за 1 шт).
+  // Для суммарной калорийности заказа; null, если у блюда КБЖУ не задан.
+  @Column({ type: 'int', nullable: true })
+  caloriesAtOrder!: number | null;
 }

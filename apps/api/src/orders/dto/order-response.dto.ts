@@ -12,6 +12,8 @@ export interface OrderItemView {
   // Порция и её вес (для отображения размера порции).
   portion: number;
   weightGrams: number | null;
+  // Снимок калорийности 1 шт выбранной порции (ккал); null, если КБЖУ не задан.
+  calories: number | null;
 }
 
 export class OrderResponseDto {
@@ -26,6 +28,8 @@ export class OrderResponseDto {
   customerName: string | null;
   customerPhone: string | null;
   items: OrderItemView[];
+  // Суммарная калорийность заказа (Σ калории×кол-во); null, если ни у одной позиции нет КБЖУ.
+  totalCalories: number | null;
 
   constructor(
     order: Order,
@@ -51,6 +55,21 @@ export class OrderResponseDto {
       lineTotal: it.priceAtOrder.multiply(it.quantity).toString(),
       portion: it.portion ?? 1,
       weightGrams: it.portionWeightGrams ?? null,
+      calories: it.caloriesAtOrder ?? null,
     }));
+    this.totalCalories = sumCalories(this.items);
   }
+}
+
+/** Σ калорий по позициям (калории×кол-во); null, если ни у одной позиции нет КБЖУ. */
+function sumCalories(items: OrderItemView[]): number | null {
+  let sum = 0;
+  let any = false;
+  for (const it of items) {
+    if (it.calories != null) {
+      sum += it.calories * it.quantity;
+      any = true;
+    }
+  }
+  return any ? sum : null;
 }

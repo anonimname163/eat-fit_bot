@@ -29,6 +29,12 @@ export class CartService {
     return portion === 2 ? item.weightGrams2 : item.weightGrams;
   }
 
+  /** Калорийность выбранной порции (ккал за 1 шт); null, если КБЖУ не задан. */
+  private caloriesForPortion(item: MenuItem, portion: number): number | null {
+    const nutrition = portion === 2 ? item.nutrition2 : item.nutrition;
+    return nutrition?.calories ?? null;
+  }
+
   async addItem(menuItemId: string, quantity: number, portion = 1): Promise<CartResponseDto> {
     const item = await this.menu.findById(menuItemId);
     if (!item || !item.isActive) {
@@ -101,6 +107,7 @@ export class CartService {
         lineTotal: lineTotal.toString(),
         portion: line.portion,
         weightGrams: this.weightForPortion(item, line.portion),
+        calories: this.caloriesForPortion(item, line.portion),
       });
     }
 

@@ -27,6 +27,7 @@ const dict = {
   add: { ru: 'Добавить', uz: 'Qo‘shish' },
   cart_empty: { ru: 'Корзина пуста', uz: 'Savat bo‘sh' },
   total: { ru: 'Итого', uz: 'Jami' },
+  total_calories: { ru: 'Калорийность', uz: 'Kaloriya' },
   checkout: { ru: 'Оформить заказ', uz: 'Buyurtma berish' },
   currency: { ru: 'сум', uz: 'so‘m' },
 

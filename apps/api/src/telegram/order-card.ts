@@ -26,6 +26,11 @@ export function orderCardText(lang: Lang, order: OrderResponseDto): string {
     lines.push(`${esc(t(lang, 'group_phone'))}: ${esc(order.customerPhone)}`);
   }
   lines.push(`💵 ${esc(formatMoney(order.total))} ${esc(t(lang, 'currency'))}`);
+  if (order.totalCalories != null) {
+    lines.push(
+      `🔥 ${esc(t(lang, 'total_calories'))}: ${esc(formatMoney(order.totalCalories))} ${esc(t(lang, 'unit_kcal'))}`,
+    );
+  }
   if (order.comment) lines.push(`${esc(t(lang, 'group_comment'))}: ${esc(order.comment)}`);
   return lines.join('\n');
 }

@@ -56,11 +56,13 @@ export interface CartItemDto {
   lineTotal: string;
   portion: number;
   weightGrams: number | null;
+  calories: number | null;
 }
 
 export interface CartDto {
   items: CartItemDto[];
   total: string;
+  totalCalories: number | null;
 }
 
 export interface OrderItemDto {
@@ -72,6 +74,7 @@ export interface OrderItemDto {
   lineTotal: string;
   portion: number;
   weightGrams: number | null;
+  calories: number | null;
 }
 
 export interface OrderDto {
@@ -86,6 +89,7 @@ export interface OrderDto {
   customerName?: string | null;
   customerPhone?: string | null;
   items: OrderItemDto[];
+  totalCalories: number | null;
 }
 
 export interface DepositDto {

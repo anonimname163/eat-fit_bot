@@ -32,6 +32,11 @@ export function OrdersScreen() {
               {formatMoney(o.total)} {t('currency')}
             </strong>
           </div>
+          {o.totalCalories != null && (
+            <div className="dish-desc" style={{ marginTop: 4 }}>
+              🔥 {t('total_calories')}: {formatMoney(o.totalCalories)} {t('unit_kcal')}
+            </div>
+          )}
         </div>
       ))}
     </div>

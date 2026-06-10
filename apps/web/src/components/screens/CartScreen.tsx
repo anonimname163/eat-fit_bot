@@ -82,6 +82,14 @@ export function CartScreen() {
             {formatMoney(cart.total)} {t('currency')}
           </strong>
         </div>
+        {cart.totalCalories != null && (
+          <div className="row" style={{ marginTop: 6 }}>
+            <span className="muted">🔥 {t('total_calories')}</span>
+            <span className="muted">
+              {formatMoney(cart.totalCalories)} {t('unit_kcal')}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="field">

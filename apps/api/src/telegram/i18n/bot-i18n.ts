@@ -172,6 +172,8 @@ const dict = {
   group_ready_delivery: { ru: 'готов к доставке', uz: 'yetkazishga tayyor' },
   group_address: { ru: '📍 Адрес', uz: '📍 Manzil' },
   group_phone: { ru: '📞 Телефон', uz: '📞 Telefon' },
+  total_calories: { ru: 'Калорийность', uz: 'Kaloriya' },
+  unit_kcal: { ru: 'ккал', uz: 'kkal' },
 
   // ---- Админ ----
   admin_panel_title: { ru: '⚙️ Панель администратора', uz: '⚙️ Administrator paneli' },
