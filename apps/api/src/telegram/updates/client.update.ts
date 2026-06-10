@@ -636,11 +636,17 @@ export class ClientUpdate {
     const blocks = list.map((o) => {
       const num = o.number;
       const total = `${formatMoney(o.total)} ${t(lang, 'currency')}`;
-      return [
+      const block = [
         `<b>${esc(t(lang, 'order_label'))} #${esc(num)}</b>`,
         `${esc(t(lang, 'status_label'))}: ${esc(statusText(lang, o.status as OrderStatus))}`,
         `${esc(t(lang, 'cart_total'))}: ${esc(total)}`,
-      ].join('\n');
+      ];
+      if (o.totalCalories != null) {
+        block.push(
+          `🔥 ${esc(t(lang, 'total_calories'))}: ${esc(formatMoney(o.totalCalories))} ${esc(t(lang, 'unit_kcal'))}`,
+        );
+      }
+      return block.join('\n');
     });
     await ctx.reply(`<b>${esc(t(lang, 'my_orders_title'))}</b>\n\n${blocks.join('\n\n')}`, {
       parse_mode: 'HTML',
@@ -698,6 +704,11 @@ export class ClientUpdate {
       );
     }
     lines.push(`<b>${esc(t(lang, 'cart_total'))}: ${esc(formatMoney(cart.total))} ${esc(t(lang, 'currency'))}</b>`);
+    if (cart.totalCalories != null) {
+      lines.push(
+        `🔥 ${esc(t(lang, 'total_calories'))}: ${esc(formatMoney(cart.totalCalories))} ${esc(t(lang, 'unit_kcal'))}`,
+      );
+    }
     lines.push(`${esc(t(lang, 'cart_address'))}: ${esc(address)}`);
     return lines.join('\n');
   }
