@@ -161,14 +161,27 @@ export class ClientUpdate {
       await ctx.answerCbQuery();
       if (next === qty) return; // ➖ на нуле — без изменений
       await this.cart.setQuantity(itemId, next, portion);
-      // Перерисовываем клавиатуру карточки на месте: оба степпера (по порциям) + «Подробнее».
-      const cart = await this.cart.getCart();
-      const qty1 = this.qtyInCart(cart, itemId, 1);
-      const qty2 = this.qtyInCart(cart, itemId, 2);
-      await ctx.editMessageReplyMarkup(this.ui.dishCardKeyboard(lang, item, qty1, qty2));
+      // Количество поменялось — подпись та же, правим только клавиатуру (активная порция прежняя).
+      await ctx.editMessageReplyMarkup(this.ui.dishCardKeyboard(lang, item, portion, next));
     } catch (err) {
       await ctx.answerCbQuery(this.errText(err, lang));
     }
+  }
+
+  /** Переключение активной порции в карточке: перерисовываем подпись (цена/вес) + клавиатуру. */
+  @Action(/^portion:sel:(.+):(\d+)$/)
+  async onPortionSelect(@Ctx() ctx: Context): Promise<void> {
+    if (await this.dupCallback(ctx)) return;
+    const itemId = this.match(ctx, 1);
+    const portion = Number(this.match(ctx, 2));
+    const client = await this.clients.findByTelegramId(String(ctx.from?.id));
+    if (!client) return void (await ctx.answerCbQuery());
+    const lang = this.ui.langOf(client);
+    await ctx.answerCbQuery();
+    const item = await this.menu.findById(itemId);
+    if (!item) return;
+    const qty = this.qtyInCart(await this.cart.getCart(), itemId, portion);
+    await this.ui.editDishCard(ctx, lang, item, portion, qty);
   }
 
   /** Количество позиции (id+порция) в корзине. */

@@ -64,22 +64,19 @@ export function addMoreKeyboard(lang: Lang) {
 }
 
 /**
- * Ряд-степпер под блюдом для выбранной порции: ➖ / метка+количество / ➕ (средняя — индикатор).
+ * Ряд-степпер под блюдом для выбранной порции: ➖ / количество / ➕ (средняя — индикатор).
  * portion (1 — обычная, 2 — вторая порция со своей ценой) идёт в callback, чтобы степпер
- * правил именно её. label — опциональный префикс средней кнопки (напр. «1️⃣»), показываем
- * только когда у блюда есть вторая порция и на карточке два степпера.
+ * правил именно выбранную порцию (активную в карточке).
  */
 export function stepperRow(
   lang: Lang,
   itemId: string,
   qty: number,
   portion = 1,
-  label?: string,
 ): InlineKeyboardButton[] {
-  const mid = label ? `${label} ${qty} ${t(lang, 'pcs')}` : `${qty} ${t(lang, 'pcs')}`;
   return [
     Markup.button.callback('➖', `qty:dec:${itemId}:${portion}`),
-    Markup.button.callback(mid, 'qty:noop'),
+    Markup.button.callback(`${qty} ${t(lang, 'pcs')}`, 'qty:noop'),
     Markup.button.callback('➕', `qty:inc:${itemId}:${portion}`),
   ];
 }
